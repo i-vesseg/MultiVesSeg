@@ -10,7 +10,7 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-#     "stylegan": "/home/galati/A2V_FL/fedbiomed/Experiment_Vessels_final/final_global_model.pt",
+#     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_OCTA500.pkl",
 # }
 
@@ -18,7 +18,7 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-#     "stylegan": "/home/galati/A2V_FL/fedbiomed/Experiment_Modalities_final/final_global_model.pt",
+#     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_SynthStrip_PET.pkl",
 # }
 
@@ -26,7 +26,7 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-#     "stylegan": "/home/galati/A2V_FL/fedbiomed/Experiment_Modalities_final/final_global_model.pt",
+#     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_SynthStrip_CT.pkl",
 # }
 
@@ -34,7 +34,7 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-#     "stylegan": "/home/galati/A2V_FL/fedbiomed/Experiment_Modalities_final/final_global_model.pt",
+#     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_SynthStrip_T2w.pkl",
 # }
 
