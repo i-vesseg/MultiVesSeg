@@ -140,7 +140,6 @@ class Coach:
         #assert not torch.any(is_semi) #unsupervised
         #assert torch.all(x[is_swi, 1] == 1) (there is no brain neither vessel mask in swi)
 
-        #TODO: Rethink of this as a general any class problem, it seems to be only 3 class
         #INTER DOMAIN BRANCH
         if not self.opts.only_intra and self.global_step % 2 == 1:
             #TODO: Probably the two branches are useless
@@ -213,7 +212,7 @@ class Coach:
 
                 # Logging related
                 if self.global_step % self.opts.image_interval == 0:
-                    if True:#self.global_step == 0:
+                    if self.global_step == 0:
                         for random_idx in range(self.opts.batch_size):
                             self.parse_and_log_images(
                                 id_logs, x, x, y_hat[:,:1], 'images/train/imgs', 0, random_idx=[random_idx]
@@ -230,9 +229,9 @@ class Coach:
                     self.print_metrics(loss_dict, prefix='train')
                     self.log_metrics(loss_dict, prefix='train')
                 
-                #if self.global_step == 0:
-                #    self.global_step += 1
-                #    continue
+                if self.global_step == 0:
+                    self.global_step += 1
+                    continue
                     
                 # Validation related
                 val_loss_dict = None
@@ -472,22 +471,18 @@ class Coach:
         print(f'Loading dataset for {self.opts.dataset_type}')
         dataset_args = data_configs.DATASETS[self.opts.dataset_type]
         transforms_dict = dataset_args['transforms'](self.opts).get_transforms()
-        #if dataset_args['train_target_root'] is not None and self.opts.only_intra:
-        #    dataset_args['train_target_root'].pop('unlabeled', None)
         train_dataset = ImagesDataset(
             opts=self.opts,
             source_root=dataset_args['train_source_root'],
             target_roots=dataset_args['train_target_root'],
-            source_transform=transforms_dict['transform_img_aug' if self.opts.use_da else 'transform_img'],
-            target_transform=transforms_dict['transform_msk_aug' if self.opts.use_da else 'transform_msk'],
+            transform=transforms_dict['transform_img_aug' if self.opts.use_da else 'transform_img'],
             one_target_slice=self.opts.one_target_slice,
         )
         test_dataset = ImagesDataset(
             opts=self.opts,
             source_root=dataset_args['val_source_root'],
             target_roots=dataset_args['val_target_root'],
-            source_transform=transforms_dict['transform_img_val'],
-            target_transform=transforms_dict['to_tensor'],
+            transform=transforms_dict['transform_img_val'],
         )
         print(f"Number of training samples: {len(train_dataset)}")
         print(f"Number of test samples: {len(test_dataset)}")
