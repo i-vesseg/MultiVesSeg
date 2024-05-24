@@ -1,6 +1,27 @@
 from configs import transforms_config
 from configs import transforms_config
 
+#HQSWI
+
+DATASETS = {
+    'HQSWI': {
+        'transforms': transforms_config.MyInpaintingTransforms,
+        'train_source_root': "/home/galati/A2V_FL/phase2/fake_OASIS",
+        'train_target_root': {
+            "unlabeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/train/unlabeled",
+            "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/train/labeled",
+        },
+        'val_source_root': None,
+        'val_target_root': {
+            "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/val",
+        },
+        'test_source_root': None,
+        'test_target_root': {
+            "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/test",
+        },
+    }
+}
+
 #OCTA500
 
 # DATASETS = {
@@ -85,27 +106,6 @@ from configs import transforms_config
 #     }
 # }
 
-#HQSWI
-
-# DATASETS = {
-#     'HQSWI': {
-#         'transforms': transforms_config.MyInpaintingTransforms,
-#         'train_source_root': "/home/galati/A2V_FL/phase2/fake_OASIS",
-#         'train_target_root': {
-#             "unlabeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/train/unlabeled",
-#             "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/train/labeled",
-#         },
-#         'val_source_root': None,
-#         'val_target_root': {
-#             "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/val",
-#         },
-#         'test_source_root': None,
-#         'test_target_root': {
-#             "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/test",
-#         },
-#     }
-# }
-
 #IXI
 
 # DATASETS = {
@@ -129,24 +129,24 @@ from configs import transforms_config
 
 #MMs_A
 
-DATASETS = {
-    'HQSWI': {
-        'transforms': transforms_config.MyInpaintingTransforms,
-        'train_source_root': "/home/galati/A2V_FL/phase2/fake_MMs_B",
-        'train_target_root': {
-            "unlabeled": "/home/galati/preprocessing/preprocess_MMs_A/train/unlabeled",
-            "labeled": "/home/galati/preprocessing/preprocess_MMs_A/train/labeled",
-        },
-        'val_source_root': None,
-        'val_target_root': {
-            "labeled": "/home/galati/preprocessing/preprocess_MMs_A/val",
-        },
-        'test_source_root': None,
-        'test_target_root': {
-            "labeled": "/home/galati/preprocessing/preprocess_MMs_A/test",
-        },
-    }
-}
+# DATASETS = {
+#     'HQSWI': {
+#         'transforms': transforms_config.MyInpaintingTransforms,
+#         'train_source_root': "/home/galati/A2V_FL/phase2/fake_MMs_B",
+#         'train_target_root': {
+#             "unlabeled": "/home/galati/preprocessing/preprocess_MMs_A/train/unlabeled",
+#             "labeled": "/home/galati/preprocessing/preprocess_MMs_A/train/labeled",
+#         },
+#         'val_source_root': None,
+#         'val_target_root': {
+#             "labeled": "/home/galati/preprocessing/preprocess_MMs_A/val",
+#         },
+#         'test_source_root': None,
+#         'test_target_root': {
+#             "labeled": "/home/galati/preprocessing/preprocess_MMs_A/test",
+#         },
+#     }
+# }
 
 #MMs_D
 
