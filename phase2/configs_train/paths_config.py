@@ -1,8 +1,16 @@
+#HQSWI
+
+model_paths = {
+    "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+    "stylegan": "",
+    "metadata": "/data/galati/brain_data/preprocessing_brain_data/info_HQSWI.pkl",
+}
+
 #OCTA500
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-#     "stylegan": "/home/galati/A2V_FL/fedbiomed/Experiment_Vessels_final/final_global_model.pt",
+#     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_OCTA500.pkl",
 # }
 
@@ -10,7 +18,7 @@
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-#     "stylegan": "/home/galati/A2V_FL/fedbiomed/Experiment_Modalities_final/final_global_model.pt",
+#     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_SynthStrip_PET.pkl",
 # }
 
@@ -18,7 +26,7 @@
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-#     "stylegan": "/home/galati/A2V_FL/fedbiomed/Experiment_Modalities_final/final_global_model.pt",
+#     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_SynthStrip_CT.pkl",
 # }
 
@@ -26,16 +34,8 @@
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-#     "stylegan": "/home/galati/A2V_FL/fedbiomed/Experiment_Modalities_final/final_global_model.pt",
-#     "metadata": "/home/galati/preprocessing/info_SynthStrip_T2w.pkl",
-# }
-
-#HQSWI
-
-# model_paths = {
-#     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
 #     "stylegan": "",
-#     "metadata": "/data/galati/brain_data/preprocessing_brain_data/info_HQSWI.pkl",
+#     "metadata": "/home/galati/preprocessing/info_SynthStrip_T2w.pkl",
 # }
 
 #IXI
@@ -48,11 +48,11 @@
 
 #MMs_A
 
-model_paths = {
-    "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-    "stylegan": "",
-    "metadata": "/home/galati/preprocessing/info_MMs_A.pkl",
-}
+# model_paths = {
+#     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "stylegan": "",
+#     "metadata": "/home/galati/preprocessing/info_MMs_A.pkl",
+# }
 
 #MMs_D
 
