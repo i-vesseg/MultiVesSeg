@@ -11,7 +11,7 @@ def one_hot(seg, num_classes=2):
 
 class ImagesDataset(Dataset):
 
-    def __init__(self, opts, source_root, target_roots=None, source_transform=None, target_transform=None, one_target_slice=False):
+    def __init__(self, opts, source_root, target_roots=None, transform=None, one_target_slice=False):
         if source_root is not None:
             self.paths_tof = sorted(data_utils.make_dataset(source_root))
         else:
@@ -42,8 +42,7 @@ class ImagesDataset(Dataset):
             if self.len_tof > self.len_swi:
                 self.len_total -= 1
         
-        self.source_transform = source_transform
-        self.target_transform = target_transform
+        self.transform = transform
         self.opts = opts
 
     def __len__(self):
@@ -90,8 +89,8 @@ class ImagesDataset(Dataset):
         else:
             weight = sample["weight"]
             
-        if self.source_transform:
-            sample = self.source_transform({"data": img, "mask": msk, "weight": weight})
+        if self.transform:
+            sample = self.transform({"data": img, "mask": msk, "weight": weight})
         
         return sample["data"], sample["mask"], sample["weight"], one_hot(domain_label, num_classes=2), has_gt
     
