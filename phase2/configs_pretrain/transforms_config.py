@@ -235,34 +235,18 @@ class MyInpaintingTransforms(TransformsConfig):
     def get_transforms(self):
         transforms_dict = {
             'transform_img': transforms.Compose([
-                ResizeImgOnly(256),
+                ResizeImgAndMsk(256),
                 DictToTensor()
             ]),
-            'transform_msk': None,#transforms.Compose([
-#                 ResizeMskTo(),
-#                 TupleToTensor()
-#             ]),
-            'to_tensor': None,#DictToTensor(),
-#             #MultiDomain
-#             'transform_img_aug': transforms.Compose([
-#                 RandomResizeImg(256, [0.5, 2]),
-#                 AddPadding(256, -1),
-#                 CenterCrop(256),
-#                 TupleToTensor()
-#             ]),
-#             'transform_msk_aug': transforms.Compose([
-#                 ResizeMskTo(),
-#                 AddPadding(256, 0, argmax=True),
-#                 CenterCrop(256),
-#                 TupleToTensor()
-#             ]),
-            #MultiScanner
             'transform_img_aug': transforms.Compose([
                 ResizeImgAndMsk(256),
                 MirrorTransform(),
                 SpatialTransform(patch_size=(256,256), angle_x=(-np.pi/6,np.pi/6), scale=(0.7,1.4), random_crop=True),
                 DictToTensor()
             ]),
-            'transform_msk_aug': None,
+            'transform_img_val': transforms.Compose([
+                ResizeImgOnly(256),
+                DictToTensor()
+            ]),
         }
         return transforms_dict
