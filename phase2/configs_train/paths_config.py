@@ -1,3 +1,11 @@
+#HQSWI
+
+model_paths = {
+    "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+    "stylegan": "",
+    "metadata": "/data/galati/brain_data/preprocessing_brain_data/info_HQSWI.pkl",
+}
+
 #OCTA500
 
 # model_paths = {
@@ -30,14 +38,6 @@
 #     "metadata": "/home/galati/preprocessing/info_SynthStrip_T2w.pkl",
 # }
 
-#HQSWI
-
-# model_paths = {
-#     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-#     "stylegan": "",
-#     "metadata": "/data/galati/brain_data/preprocessing_brain_data/info_HQSWI.pkl",
-# }
-
 #IXI
 
 # model_paths = {
@@ -48,11 +48,11 @@
 
 #MMs_A
 
-model_paths = {
-    "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-    "stylegan": "",
-    "metadata": "/home/galati/preprocessing/info_MMs_A.pkl",
-}
+# model_paths = {
+#     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "stylegan": "",
+#     "metadata": "/home/galati/preprocessing/info_MMs_A.pkl",
+# }
 
 #MMs_D
 
