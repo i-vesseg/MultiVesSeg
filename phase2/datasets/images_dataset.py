@@ -89,12 +89,7 @@ class ImagesDataset(Dataset):
             weight = np.ones(img.shape, dtype=msk.dtype)
         else:
             weight = sample["weight"]
-
-        """if self.source_transform:
-            img, new_size = self.source_transform(img)
-        if self.target_transform:
-            msk, _ = self.target_transform((msk, new_size))
-            weight, _ = self.target_transform((weight, new_size))"""
+            
         if self.source_transform:
             sample = self.source_transform({"data": img, "mask": msk, "weight": weight})
         
