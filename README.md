@@ -17,6 +17,8 @@ This repository contains the official PyTorch implementation of the following pa
 
 ## Preparing datasets for training
 
+Folder `preprocessing` contains the Jupyter notebooks used to prepare the datasets utilized in our experiments: OASIS tocite, IXI tocite, and TopCow tocite. To preprocess your own dataset, create a new notebook by following the structure of the existing ones.
+
 ## Training networks
 
 ## Running inference and evaluation
