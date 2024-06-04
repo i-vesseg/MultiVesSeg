@@ -24,6 +24,11 @@ Folder `preprocessing` contains the Jupyter notebooks used to prepare the datase
 ### Phase 1
 
 ### Phase 2
+TODO:add pretraining
+
+Once the pretraining is complete, you can move to the target dataset:
+
+1) Split the preprocessed target data into `labeled` and `unlabeled`.
 ```
 mkdir ${TGT_dir}/train/labeled
 mkdir ${TGT_dir}/train/unlabeled
@@ -31,7 +36,13 @@ mv ${TGT_dir}/train/*.npy ${TGT_dir}/train/unlabeled
 mv ${TGT_dir}/train/unlabeled/000_* ${TGT_dir}/train/labeled
 mv ${TGT_dir}/train/unlabeled/034_* ${TGT_dir}/train/labeled
 mv ${TGT_dir}/train/unlabeled/043_* ${TGT_dir}/train/labeled
+```
 
+2) Edit the configuration files `data_configs.py` and `paths_config`  inside folder `configs_train`.
+
+3) Start the training script.
+```
+python train.py --dataset_type=HQSWI --exp_dir=${tgt_dir} --workers=6 --batch_size=4 --test_batch_size=8 --test_workers=6 --start_from_latent_avg --output_size=512 --input_nc=1 --label_nc=3 --max_steps=${TGT_STEPS} --checkpoint_dir=${src_dir}/checkpoints  --one_target_slice --src_label 0 --tgt_label 1
 ```
 
 ## Running inference and evaluation
