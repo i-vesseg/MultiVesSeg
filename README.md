@@ -21,4 +21,17 @@ Folder `preprocessing` contains the Jupyter notebooks used to prepare the datase
 
 ## Training networks
 
+### Phase 1
+
+### Phase 2
+```
+mkdir ${TGT_dir}/train/labeled
+mkdir ${TGT_dir}/train/unlabeled
+mv ${TGT_dir}/train/*.npy ${TGT_dir}/train/unlabeled
+mv ${TGT_dir}/train/unlabeled/000_* ${TGT_dir}/train/labeled
+mv ${TGT_dir}/train/unlabeled/034_* ${TGT_dir}/train/labeled
+mv ${TGT_dir}/train/unlabeled/043_* ${TGT_dir}/train/labeled
+
+```
+
 ## Running inference and evaluation
