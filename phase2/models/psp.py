@@ -24,18 +24,6 @@ def get_keys(d, name):
     d_filt = {k[len(name) + 1:]: v for k, v in d.items() if k[:len(name)] == name}
     return d_filt
 
-def load_state_dict(net, keys_vin, strict):
-    current_model=net.state_dict()
-    if not strict:
-        new_state_dict={
-            k:v if v.size()==current_model[k].size() else current_model[k] for k,v in zip(
-                current_model.keys(), keys_vin.values()
-            )
-        }
-    else:
-        new_state_dict = keys_vin
-    net.load_state_dict(new_state_dict, strict=strict)
-
 
 class pSp(nn.Module):
 
@@ -77,18 +65,18 @@ class pSp(nn.Module):
             print('Loading pSp from checkpoint: {}'.format(self.opts.checkpoint_path))
             ckpt = torch.load(self.opts.checkpoint_path, map_location='cpu')
             if len(self.opts.src_tgt_domains) == len(ckpt['latent_avg']):
-                load_state_dict(self.encoder, get_keys(ckpt, 'module.encoder'), strict=True)
+                self.encoder.load_state_dict(get_keys(ckpt, 'module.encoder'), strict=True)
             else:
                 print("Encoder is not being loaded")
-            load_state_dict(self.decoder, get_keys(ckpt, 'module.decoder'), strict=False)
-            load_state_dict(self.interpreter, get_keys(ckpt, 'module.interpreter'), strict=True)
+            self.decoder.load_state_dict(get_keys(ckpt, 'module.decoder'), strict=False)
+            self.interpreter.load_state_dict(get_keys(ckpt, 'module.interpreter'), strict=True)
             if not self.opts.only_intra:
                 requires_grad(self.interpreter.classifiers["source"], False)
             self.__load_latent_avg(ckpt)
         else:
             print('Loading decoder weights from pretrained!')
             ckpt = torch.load(self.opts.stylegan_weights)
-            load_state_dict(self.decoder, ckpt['g_ema'], strict=True)
+            self.decoder.load_state_dict(ckpt['g_ema'], strict=True)
             if self.opts.learn_in_w:
                 self.__load_latent_avg(ckpt, repeat=1)
             else:

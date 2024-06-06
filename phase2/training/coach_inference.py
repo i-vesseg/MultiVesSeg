@@ -399,8 +399,7 @@ class Coach:
             opts=self.opts,
             source_root=dataset_args['test_source_root'],
             target_roots=dataset_args['test_target_root'],
-            source_transform=transforms_dict['transform_img'],
-            target_transform=transforms_dict['to_tensor'],
+            transform=transforms_dict['transform_img_val'],
         )
         print(f"Number of test samples: {len(test_dataset)}")
         return test_dataset

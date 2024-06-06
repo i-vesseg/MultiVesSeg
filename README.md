@@ -33,16 +33,23 @@ Once the pretraining is complete, you can move to the target dataset:
 mkdir ${TGT_dir}/train/labeled
 mkdir ${TGT_dir}/train/unlabeled
 mv ${TGT_dir}/train/*.npy ${TGT_dir}/train/unlabeled
-mv ${TGT_dir}/train/unlabeled/000_* ${TGT_dir}/train/labeled
-mv ${TGT_dir}/train/unlabeled/034_* ${TGT_dir}/train/labeled
-mv ${TGT_dir}/train/unlabeled/043_* ${TGT_dir}/train/labeled
+mv ${TGT_dir}/train/unlabeled/${ID_1}_slice* ${TGT_dir}/train/labeled
+mv ${TGT_dir}/train/unlabeled/${ID_2}_slice* ${TGT_dir}/train/labeled
+mv ${TGT_dir}/train/unlabeled/${ID_3}_slice* ${TGT_dir}/train/labeled
 ```
 
-2) Edit the configuration files `data_configs.py` and `paths_config`  inside folder `configs_train`.
+2) Edit the configuration files `data_configs.py` and `paths_config.py`  inside folder `configs_train`.
 
 3) Start the training script.
 ```
 python train.py --dataset_type=HQSWI --exp_dir=${tgt_dir} --workers=6 --batch_size=4 --test_batch_size=8 --test_workers=6 --start_from_latent_avg --output_size=512 --input_nc=1 --label_nc=3 --max_steps=${TGT_STEPS} --checkpoint_dir=${src_dir}/checkpoints  --one_target_slice --src_label 0 --tgt_label 1
 ```
 
-## Running inference and evaluation
+## Running inference
+
+1) Edit the configuration files `data_configs.py` and `paths_config.py`  inside folder `configs_train`.
+
+2) Start the inference script.
+```
+python scripts/inference.py --dataset_type=HQSWI --exp_dir=${inf_dir} --test_batch_size=8 --test_workers=6 --start_from_latent_avg --output_size=512 --input_nc=1 --label_nc=3 --checkpoint_dir=${tgt_dir}/checkpoints --src_label 0 --tgt_label 1
+```
