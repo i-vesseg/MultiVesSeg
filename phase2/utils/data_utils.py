@@ -3,6 +3,7 @@ Code adopted from pix2pixHD:
 https://github.com/NVIDIA/pix2pixHD/blob/master/data/image_folder.py
 """
 import os
+import glob
 
 IMG_EXTENSIONS = [
     '.jpg', '.JPG', '.jpeg', '.JPEG',
@@ -16,11 +17,10 @@ def is_image_file(filename):
 
 
 def make_dataset(dir):
-    images = []
-    assert os.path.isdir(dir), '%s is not a valid directory' % dir
-    for root, _, fnames in sorted(os.walk(dir)):
-        for fname in fnames:
-            if is_image_file(fname):
-                path = os.path.join(root, fname)
-                images.append(path)
+    if os.path.isdir(dir):
+        images = [os.path.join(dir, fname) for fname in os.listdir(dir) if is_image_file(fname)]
+    else:
+        images = [path for path in glob.glob(dir + "*") if is_image_file(os.path.basename(path))]
+    assert all([os.path.isfile(img) for img in images]), '%s is not a valid path' % dir
+    assert len(images) > 0, '%s is not a valid path' % dir
     return images
