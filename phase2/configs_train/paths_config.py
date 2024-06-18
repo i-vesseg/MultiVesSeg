@@ -1,15 +1,19 @@
 #HQSWI
 
-model_paths = {
-    "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
-    "stylegan": "",
-    "metadata": "/data/galati/brain_data/preprocessing_brain_data/info_HQSWI.pkl",
-}
+# model_paths = {
+#     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "alex_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex.pth",
+#     "alex_pretr_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex_pretr.pth",
+#     "stylegan": "",
+#     "metadata": "/data/galati/brain_data/preprocessing_brain_data/info_HQSWI.pkl",
+# }
 
 #OCTA500
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "alex_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex.pth",
+#     "alex_pretr_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex_pretr.pth",
 #     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_OCTA500.pkl",
 # }
@@ -18,6 +22,8 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "alex_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex.pth",
+#     "alex_pretr_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex_pretr.pth",
 #     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_SynthStrip_PET.pkl",
 # }
@@ -26,6 +32,8 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "alex_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex.pth",
+#     "alex_pretr_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex_pretr.pth",
 #     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_SynthStrip_CT.pkl",
 # }
@@ -34,6 +42,8 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "alex_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex.pth",
+#     "alex_pretr_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex_pretr.pth",
 #     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_SynthStrip_T2w.pkl",
 # }
@@ -42,6 +52,8 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "alex_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex.pth",
+#     "alex_pretr_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex_pretr.pth",
 #     "stylegan": "",
 #     "metadata": "/data/galati/brain_data/preprocessing_brain_data/info_IXI.pkl",
 # }
@@ -50,6 +62,8 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "alex_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex.pth",
+#     "alex_pretr_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex_pretr.pth",
 #     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_MMs_A.pkl",
 # }
@@ -58,6 +72,8 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "alex_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex.pth",
+#     "alex_pretr_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex_pretr.pth",
 #     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_MMs_D_aligned.pkl",
 # }
@@ -66,6 +82,18 @@ model_paths = {
 
 # model_paths = {
 #     "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+#     "alex_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex.pth",
+#     "alex_pretr_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex_pretr.pth",
 #     "stylegan": "",
 #     "metadata": "/home/galati/preprocessing/info_MMs_C.pkl",
 # }
+
+#CAS
+
+model_paths = {
+    "arcface_model": "/home/galati/phase2/pretrained_models/backbone.pth",
+    "alex_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex.pth",
+    "alex_pretr_model": "/home/galati/MultiVesSeg/phase2/pretrained_models/alex_pretr.pth",
+    "stylegan": "",
+    "metadata": "/home/galati/MultiVesSeg/preprocessing/info_CAS.pkl",
+}

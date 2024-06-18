@@ -10,6 +10,7 @@ import numpy as np
 import torch
 import nibabel as nib
 import glob
+import gc
 
 from batchgenerators.augmentations.utils import resize_segmentation
 from skimage.transform import resize
@@ -98,6 +99,10 @@ def main():
                 if not opts.only_intra:
                     inter_pred += pred_dict["intra"]
                     volume_trans = pred_dict["trans"]
+            
+            del coach
+            gc.collect()
+            torch.cuda.empty_cache()
     
         intra_pred /= len(ckpts)
         if not opts.only_intra:

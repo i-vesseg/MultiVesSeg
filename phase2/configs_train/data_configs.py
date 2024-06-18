@@ -3,24 +3,24 @@ from configs import transforms_config
 
 #HQSWI
 
-DATASETS = {
-    'HQSWI': {
-        'transforms': transforms_config.MyInpaintingTransforms,
-        'train_source_root': "/home/galati/A2V_FL/phase2/fake_OASIS",
-        'train_target_root': {
-            "unlabeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/train/unlabeled",
-            "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/train/labeled",
-        },
-        'val_source_root': None,
-        'val_target_root': {
-            "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/val",
-        },
-        'test_source_root': None,
-        'test_target_root': {
-            "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/test",
-        },
-    }
-}
+# DATASETS = {
+#     'HQSWI': {
+#         'transforms': transforms_config.MyInpaintingTransforms,
+#         'train_source_root': "/home/galati/A2V_FL/phase2/fake_OASIS",
+#         'train_target_root': {
+#             "unlabeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/train/unlabeled",
+#             "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/train/labeled",
+#         },
+#         'val_source_root': None,
+#         'val_target_root': {
+#             "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/val",
+#         },
+#         'test_source_root': None,
+#         'test_target_root': {
+#             "labeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/test",
+#         },
+#     }
+# }
 
 #OCTA500
 
@@ -189,3 +189,24 @@ DATASETS = {
 #         },
 #     }
 # }
+
+#CAS
+
+DATASETS = {
+    'HQSWI': {
+        'transforms': transforms_config.MyInpaintingTransforms,
+        'train_source_root': "/data/galati/brain_data/preprocessing_brain_data/preprocess_OASIS/train",
+        'train_target_root': {
+            "unlabeled": "/home/galati/MultiVesSeg/preprocessing/preprocess_CAS/train/unlabeled",
+            "labeled": "/home/galati/MultiVesSeg/preprocessing/preprocess_CAS/train/labeled",
+        },
+        'val_source_root': None,
+        'val_target_root': {
+            "labeled": "/home/galati/MultiVesSeg/preprocessing/preprocess_CAS/val",
+        },
+        'test_source_root': None,
+        'test_target_root': {
+            "labeled": "/home/galati/MultiVesSeg/preprocessing/preprocess_CAS/train/unlabeled",
+        },
+    }
+}
