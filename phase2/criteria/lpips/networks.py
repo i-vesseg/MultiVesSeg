@@ -7,17 +7,14 @@ import torch.nn as nn
 from torchvision import models
 
 from criteria.lpips.utils import normalize_activation
+from configs.paths_config import model_paths
 
 
 def get_network(net_type: str):
     if net_type == 'alex':
         return AlexNet()
-    elif net_type == 'squeeze':
-        return SqueezeNet()
-    elif net_type == 'vgg':
-        return VGG16()
     else:
-        raise NotImplementedError('choose net_type from [alex, squeeze, vgg].')
+        raise NotImplementedError('choose net_type from [alex].')
 
 
 class LinLayers(nn.ModuleList):
@@ -63,34 +60,19 @@ class BaseNet(nn.Module):
         return output
 
 
-class SqueezeNet(BaseNet):
-    def __init__(self):
-        super(SqueezeNet, self).__init__()
-
-        self.layers = models.squeezenet1_1(True).features
-        self.target_layers = [2, 5, 8, 10, 11, 12, 13]
-        self.n_channels_list = [64, 128, 256, 384, 384, 512, 512]
-
-        self.set_requires_grad(False)
-
-
 class AlexNet(BaseNet):
     def __init__(self):
         super(AlexNet, self).__init__()
 
-        self.layers = models.alexnet(True).features
+        #self.layers = models.alexnet(True).features
+        alex_model = models.alexnet(pretrained=False)
+        alex_model.load_state_dict(
+            torch.load(model_paths["alex_pretr_model"], map_location=None if torch.cuda.is_available() else torch.device('cpu')
+            ), strict=False
+        )
+        self.layers = alex_model.features
+        
         self.target_layers = [2, 5, 8, 10, 12]
         self.n_channels_list = [64, 192, 384, 256, 256]
-
-        self.set_requires_grad(False)
-
-
-class VGG16(BaseNet):
-    def __init__(self):
-        super(VGG16, self).__init__()
-
-        self.layers = models.vgg16(True).features
-        self.target_layers = [4, 9, 16, 23, 30]
-        self.n_channels_list = [64, 128, 256, 512, 512]
 
         self.set_requires_grad(False)

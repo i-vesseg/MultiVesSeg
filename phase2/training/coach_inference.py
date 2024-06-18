@@ -368,6 +368,9 @@ class Coach:
                 if not self.opts.only_intra:
                     predicted_inter = predicted_inter[until:] if until is not None else None
                     translation = translation[until:] if until is not None else None
+                
+                yield curr_img_name, pred_dict[curr_img_name]
+                del pred_dict[curr_img_name]
                 curr_img_name = img_names[-1] if until is not None else None
 
         metrics = {k: np.mean([metrics[patient_id][k] for patient_id in metrics]) for k in metrics[list(metrics.keys())[0]]}
@@ -376,7 +379,7 @@ class Coach:
         self.log_metrics(loss_dict, prefix='test')
         self.print_metrics(loss_dict, prefix='test')
         
-        return loss_dict, pred_dict
+        return loss_dict
 
     def checkpoint_me(self, loss_dict, is_best, best_path='best_model.pt'):
         save_name = best_path if is_best else f'iteration_{self.global_step}.pt'

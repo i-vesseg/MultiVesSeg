@@ -9,6 +9,8 @@ import pickle
 import numpy as np
 import torch
 import nibabel as nib
+import glob
+import gc
 
 from batchgenerators.augmentations.utils import resize_segmentation
 from skimage.transform import resize
@@ -33,6 +35,8 @@ check_is_train()
 from options.test_options import TestOptions
 from training.coach_inference import Coach
 from configs.paths_config import model_paths
+from configs import data_configs
+from utils import data_utils
 
 def get_best_models(checkpoint_dir):
     with open(os.path.join(checkpoint_dir, "timestamp.txt"), "r") as file:
@@ -65,29 +69,44 @@ def main():
     
     ckpts = get_best_models(opts.checkpoint_dir)
     
-    inter_preds = None
-    intra_preds = None
-    trans_preds = None
-    for ckpt in ckpts:#[-3:]:
-        opts.checkpoint_path = ckpt
-        global_step = torch.load(ckpt, map_location='cpu')["global_step"]
-        coach = Coach(opts, global_step)
-        loss_dict, pred_dict = coach.infer()
-        
-        if inter_preds is None and intra_preds is None and trans_preds is None:
-            inter_preds = {k: 0 for k in pred_dict.keys()}
-            intra_preds = {k: 0 for k in pred_dict.keys()}
-            trans_preds = {k: 0 for k in pred_dict.keys()}
-        
-        for curr_img_name in pred_dict.keys():
-            inter_preds[curr_img_name] += pred_dict[curr_img_name]["inter"]
-            intra_preds[curr_img_name] += pred_dict[curr_img_name]["intra"]
-            trans_preds[curr_img_name] = pred_dict[curr_img_name]["trans"]
+    all_img_names = set()
+    dataset_args = data_configs.DATASETS[opts.dataset_type]
+    if opts.only_intra:
+        all_img_names.update([p.split("_slice")[0] for p in data_utils.make_dataset(dataset_args['test_source_root'])])
+    else:
+        all_img_names.update([p.split("_slice")[0] for p in data_utils.make_dataset(dataset_args['test_target_root']["labeled"])])
     
-    for curr_img_name in pred_dict.keys():
-        inter_pred = inter_preds[curr_img_name]# / len(ckpts)
-        intra_pred = intra_preds[curr_img_name]# / len(ckpts)
-        volume_trans = trans_preds[curr_img_name]
+    for curr_img_name in sorted(all_img_names):
+        if opts.only_intra:
+            data_configs.DATASETS[opts.dataset_type]['test_source_root'] = curr_img_name
+        else:
+            data_configs.DATASETS[opts.dataset_type]['test_target_root']["labeled"] = curr_img_name
+        curr_img_name = os.path.basename(curr_img_name)
+        
+        intra_pred = 0
+        if not opts.only_intra:
+            inter_pred = 0
+            volume_trans = 0        
+        
+        for ckpt in ckpts:#[-3:]:
+            opts.checkpoint_path = ckpt
+            global_step = torch.load(ckpt, map_location='cpu')["global_step"]
+            coach = Coach(opts, global_step)
+        
+            for confirm_curr_img_name, pred_dict in coach.infer():
+                assert curr_img_name == confirm_curr_img_name
+                intra_pred += pred_dict["intra"]
+                if not opts.only_intra:
+                    inter_pred += pred_dict["intra"]
+                    volume_trans = pred_dict["trans"]
+            
+            del coach
+            gc.collect()
+            torch.cuda.empty_cache()
+    
+        intra_pred /= len(ckpts)
+        if not opts.only_intra:
+            inter_pred /= len(ckpts)
         
         volume_intra = np.argmax(intra_pred, axis=1)
         if not opts.only_intra:
