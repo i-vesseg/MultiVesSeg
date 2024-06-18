@@ -48,7 +48,7 @@ def get_best_models(checkpoint_dir):
     return [os.path.join(checkpoint_dir, model_name[0]) for model_name in best_models]
 
 with open(model_paths["metadata"], "rb") as file:
-    info_val = pickle.load(file)["train"]
+    info_val = pickle.load(file)["test"]
 print("TODO: move shapesAfterCropping to preprocessing")
 def get_slice_size(slc):
     return len(range(*slc.indices(slc.stop)))
