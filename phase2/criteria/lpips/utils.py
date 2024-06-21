@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 import torch
 
-from configs.paths_config import model_paths
+from options import Options
 
 
 def normalize_activation(x, eps=1e-10):
@@ -12,7 +12,7 @@ def normalize_activation(x, eps=1e-10):
 
 def get_state_dict(net_type: str = 'alex', version: str = '0.1'):
     old_state_dict = torch.load(
-        model_paths["alex_model"], 
+        Options().opts.alex_model, 
         map_location=None if torch.cuda.is_available() else torch.device('cpu')
     )
     

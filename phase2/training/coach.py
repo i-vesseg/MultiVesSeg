@@ -14,7 +14,6 @@ from utils import common, train_utils
 from criteria import ce_loss, dice_loss, ssim_loss
 from criteria.lpips.lpips import LPIPS
 from configs import data_configs
-from configs.paths_config import model_paths
 from datasets.images_dataset import ImagesDataset, MyRandomSampler
 from models.psp import pSp
 from training.ranger import Ranger
@@ -157,10 +156,10 @@ class Coach:
                 )
 
                 msk_loss_additional_tof = dict(zip(["loss", "loss_dict", "id_logs"], self._msk_loss(
-                    y[is_tof], y_hat[is_tof,1:], None
+                    y[is_tof], y_hat[is_tof,1:]
                 )))
 
-                loss, loss_dict, id_logs = self.calc_loss(x, y, y_cycle, latent, is_swi, where_msk_loss=is_tof, weight_msk_loss=w)
+                loss, loss_dict, id_logs = self.calc_loss(x, y, y_cycle, where_msk_loss=is_tof, weight_msk_loss=w)
                 loss += msk_loss_additional_tof["loss"]
 
             #SEMI-SUPERVISED BRANCH
@@ -177,10 +176,10 @@ class Coach:
                 )
 
                 msk_loss_additional_tof = dict(zip(["loss", "loss_dict", "id_logs"], self._msk_loss(
-                    y[has_gt], y_hat[has_gt,1:], None
+                    y[has_gt], y_hat[has_gt,1:]
                 )))
 
-                loss, loss_dict, id_logs = self.calc_loss(x, y, y_cycle, latent, is_swi, where_msk_loss=has_gt, weight_msk_loss=w)
+                loss, loss_dict, id_logs = self.calc_loss(x, y, y_cycle, where_msk_loss=has_gt, weight_msk_loss=w)
                 loss += msk_loss_additional_tof["loss"]
 
         #INTRA DOMAIN BRANCH
@@ -189,7 +188,7 @@ class Coach:
                 x, labels, return_latents=True, feature_scale=min(1.0, 0.0001*self.global_step), ExSeg=True
             )
             
-            loss, loss_dict, id_logs = self.calc_loss(x, y, y_hat, latent, is_swi, where_msk_loss=has_gt, weight_msk_loss=w)
+            loss, loss_dict, id_logs = self.calc_loss(x, y, y_hat, where_msk_loss=has_gt, weight_msk_loss=w)
 
         assert id_logs is None
         return x.detach(), y.detach(), y_hat.detach(), loss, loss_dict, id_logs
@@ -242,8 +241,12 @@ class Coach:
                     val_loss_dict = self.validate()
 
                     current_worst = self.best_val_loss[0][1]
-                    current_dice = [v for k,v in val_loss_dict.items() if "dice_vessels" in k]
-                    if any([dice > current_worst for dice in current_dice]):
+                    current_dice = []
+                    for idx_channel, take_channel in enumerate(self.find_favoured_channels()):
+                        if take_channel:
+                            current_dice += [[val_loss_dict[k] for k in sorted(val_loss_dict.keys()) if f"dice_{idx_channel}" in k]]
+                    current_dice = np.mean(current_dice, axis=0)
+                    if np.any(current_dice > current_worst):
                         current_dice = max(current_dice)
                         best_dice_ckpt = self.best_val_loss[0][0]
                         self.best_val_loss = sorted([(best_dice_ckpt, current_dice), *self.best_val_loss[1:]], key=lambda x: x[1])
@@ -301,7 +304,7 @@ class Coach:
                 y_hat = self.net.module.face_pool(y_hat)
                 y = self.net.module.face_pool(y)
                 
-                loss_intra, cur_loss_dict_intra, id_logs_intra = self.calc_loss(x, y, y_hat, latent, is_swi, weight_msk_loss=w)
+                loss_intra, cur_loss_dict_intra, id_logs_intra = self.calc_loss(x, y, y_hat, weight_msk_loss=w)
 
                 # Logging related
                 random_idx = self.parse_and_log_images(None, x, x, y_hat[:,:1], 
@@ -355,7 +358,7 @@ class Coach:
                     )
 
                     loss_inter, cur_loss_dict_inter, id_logs_inter = self.calc_loss(
-                        x, y, torch.cat([y_cycle[:,:1], y_hat[:,1:]], dim=1), latent, is_swi, weight_msk_loss=w
+                        x, y, torch.cat([y_cycle[:,:1], y_hat[:,1:]], dim=1), weight_msk_loss=w
                     )
 
                     predicted_inter = np.concatenate([
@@ -395,37 +398,26 @@ class Coach:
                     volume_inter = np.argmax(volume_inter, axis=1)
                     volume_ensemble = np.argmax(volume_ensemble, axis=1)
 
-                if self.opts.label_nc == 3:
-                    if not self.opts.consider_all_vessels:
+                metrics[curr_img_name] = {}
+                for label_idx in range(self.opts.label_nc):
+                    if label_idx == 2 and self.opts.consider_only_vessels_within_brain:
                         roi = np.logical_not(np.isclose(volume_orig, 0))#experts have labeled only vessels inside the brain
                     else:
-                        roi = np.full(volume_orig.shape, True, dtype=bool)#experts have labeled all vessels (within the weight mask)
-                    vessels_orig = np.isclose(volume_orig, 2)
-                    vessels_intra = np.logical_and(np.isclose(volume_intra, 2), roi)
+                        roi = np.full(volume_orig.shape, True, dtype=bool)#experts have labeled all (within the weight mask)
+                    binary_orig = np.logical_and(np.isclose(volume_orig, label_idx), roi)
+                    binary_intra = np.logical_and(np.isclose(volume_intra, label_idx), roi)
                     if not self.opts.only_intra:
-                        vessels_inter = np.logical_and(np.isclose(volume_inter, 2), roi)
-                        vessels_ensemble = np.logical_and(np.isclose(volume_ensemble, 2), roi)
-                else:
-                    vessels_orig = volume_orig
-                    vessels_intra = volume_intra
+                        binary_inter = np.logical_and(np.isclose(volume_inter, label_idx), roi)
+                        binary_ensemble = np.logical_and(np.isclose(volume_ensemble, label_idx), roi)
+                    
+                    metrics[curr_img_name][f"intra_dice_{label_idx}"] = DC(binary_intra, binary_orig)
+                    metrics[curr_img_name][f"intra_hausdorff_{label_idx}"] = HD(binary_intra, binary_orig)
                     if not self.opts.only_intra:
-                        vessels_inter = volume_inter
-                        vessels_ensemble = volume_ensemble
-                        
-                #nib.save(nib.Nifti1Image(volume_orig.astype(float), None, None), f"{curr_img_name}_orig.nii.gz")
-                #nib.save(nib.Nifti1Image(volume_inter.astype(float), None, None), f"{curr_img_name}_pred.nii.gz")
-                #nib.save(nib.Nifti1Image(volume_intra.astype(float), None, None), f"{curr_img_name}_intra.nii.gz")
-                #nib.save(nib.Nifti1Image(volume_ensemble.astype(float), None, None), f"{curr_img_name}_ensemble.nii.gz")
-                #nib.save(nib.Nifti1Image(volume_trans.astype(float), None, None), f"{curr_img_name}_trans.nii.gz")
-
-                metrics[curr_img_name] = {}
-                metrics[curr_img_name]["intra_dice_vessels"] = DC(vessels_intra, vessels_orig)
-                metrics[curr_img_name]["intra_hausdorff_vessels"] = HD(vessels_intra, vessels_orig)
-                if not self.opts.only_intra:
-                    metrics[curr_img_name]["inter_dice_vessels"] = DC(vessels_inter, vessels_orig)
-                    metrics[curr_img_name]["inter_hausdorff_vessels"] = HD(vessels_inter, vessels_orig)
-                    metrics[curr_img_name]["dice_vessels"] = DC(vessels_ensemble, vessels_orig)
-                    metrics[curr_img_name]["hausdorff_vessels"] = HD(vessels_ensemble, vessels_orig)
+                        metrics[curr_img_name][f"inter_dice_{label_idx}"] = DC(binary_inter, binary_orig)
+                        metrics[curr_img_name][f"inter_hausdorff_{label_idx}"] = HD(binary_inter, binary_orig)
+                        metrics[curr_img_name][f"dice_{label_idx}"] = DC(binary_ensemble, binary_orig)
+                        metrics[curr_img_name][f"hausdorff_{label_idx}"] = HD(binary_ensemble, binary_orig)
+                
                 print(curr_img_name, metrics[curr_img_name])
 
                 original = original[until:] if until is not None else None
@@ -498,41 +490,56 @@ class Coach:
         print(f"Number of test samples: {len(test_dataset)}")
         return train_dataset, test_dataset
 
-    def calc_loss(self, x, y, y_hat, latent, is_swi, where_msk_loss=None, weight_msk_loss=None):
-        weight_img_loss = torch.where(
-            is_swi,
-            y_hat[:,-1:].permute(1, 2, 3, 0) * 0,
-            (y[:,-1:].permute(1, 2, 3, 0) + 1) / 2,
-        ).permute(3, 0, 1, 2)
-        weight_img_loss = torch.where(weight_img_loss < 0.5, 0.3, 1.0)
+    def find_favoured_channels(self):
+        ce_weights, dice_weights = self.opts.ce_weights, self.opts.dice_weights
+        if ce_weights is None and dice_weights is None:
+            seg_weights = None
+        elif ce_weights is not None and dice_weights is not None:
+            if max(ce_weights) >= max(dice_weights):
+                seg_weights = ce_weights
+            else:
+                seg_weights = dice_weights
+        elif ce_weights is not None:
+            seg_weights = ce_weights
+        else:
+            seg_weights = dice_weights
         
-        img_loss = dict(zip(["loss", "loss_dict", "id_logs"], self._img_loss(
-            x*weight_img_loss, y_hat[:,:1]*weight_img_loss, latent
-        )))
-        
+        if seg_weights is None:
+            return np.array([True] * self.opts.label_nc)
+        else:
+            return np.isclose(seg_weights, max(seg_weights))
+    
+    def calc_loss(self, x, y, y_hat, where_msk_loss=None, weight_msk_loss=None):    
         if where_msk_loss is None:
             where_msk_loss = torch.ones(y.shape[0], dtype=torch.bool, device=y.device)
         assert torch.any(where_msk_loss) or self.opts.only_intra
         
+        if self.opts.ce_weights is not None or self.opts.dice_weights is not None:
+            favoured_channels = torch.tensor(self.find_favoured_channels(), dtype=torch.bool, device=y.device)
+            weight_img_loss_where_msk_loss = y[where_msk_loss]
+            weight_img_loss_where_msk_loss = weight_img_loss_where_msk_loss[:, favoured_channels]
+            weight_img_loss_where_msk_loss = torch.any(weight_img_loss_where_msk_loss > 0.5, dim=1)
+            weight_img_loss = torch.zeros(x.shape, dtype=bool, device=x.device)
+            weight_img_loss[where_msk_loss] = weight_img_loss_where_msk_loss[:,None]
+            weight_img_loss = torch.where(weight_img_loss, 1.0, 0.3)
+        else:
+            weight_img_loss = x * 0 + 1
+        
+        img_loss = dict(zip(["loss", "loss_dict", "id_logs"], self._img_loss(
+            x*weight_img_loss, y_hat[:,:1]*weight_img_loss
+        )))
+        
         if weight_msk_loss is None:
             weight_msk_loss = torch.ones(x.shape, dtype=y.dtype, device=y.device)
             
-        #opzione 1
-        #y[weight_msk_loss.repeat(1, 3, 1, 1)==0] = y_hat[:,1:][weight_msk_loss.repeat(1, 3, 1, 1)==0]
-        
-        #opzione 2: detach
-        
-        #opzione 3: trova le size e seleziona con reshape
-        
-        #opzione 0: moltiplicazione
         msk_loss = dict(zip(["loss", "loss_dict", "id_logs"], self._msk_loss(
-            y[where_msk_loss]*weight_msk_loss[where_msk_loss], y_hat[where_msk_loss,1:]*weight_msk_loss[where_msk_loss], latent
+            y[where_msk_loss]*weight_msk_loss[where_msk_loss], y_hat[where_msk_loss,1:]*weight_msk_loss[where_msk_loss]
         )))
         
         img_loss["loss_dict"]["loss"] = img_loss["loss_dict"]["loss_img"] + msk_loss["loss_dict"]["loss_msk"]
         return img_loss["loss"] + msk_loss["loss"], {**img_loss["loss_dict"], **msk_loss["loss_dict"]}, img_loss["id_logs"] 
     
-    def _msk_loss(self, y, y_hat, latent):
+    def _msk_loss(self, y, y_hat):
         loss_dict = {}
         loss = 0.0
         id_logs = None
@@ -547,7 +554,7 @@ class Coach:
         loss_dict['loss_msk'] = float(loss)
         return loss, loss_dict, id_logs
     
-    def _img_loss(self, y, y_hat, latent):
+    def _img_loss(self, y, y_hat):
         loss_dict = {}
         loss = 0.0
         id_logs = None

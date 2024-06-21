@@ -7,7 +7,7 @@ import torch.nn as nn
 from torchvision import models
 
 from criteria.lpips.utils import normalize_activation
-from configs.paths_config import model_paths
+from options import Options
 
 
 def get_network(net_type: str):
@@ -67,7 +67,7 @@ class AlexNet(BaseNet):
         #self.layers = models.alexnet(True).features
         alex_model = models.alexnet(pretrained=False)
         alex_model.load_state_dict(
-            torch.load(model_paths["alex_pretr_model"], map_location=None if torch.cuda.is_available() else torch.device('cpu')
+            torch.load(Options().opts.alex_pretr_model, map_location=None if torch.cuda.is_available() else torch.device('cpu')
             ), strict=False
         )
         self.layers = alex_model.features
