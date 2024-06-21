@@ -24,7 +24,7 @@ Folder `preprocessing` contains the Jupyter notebooks used to prepare the datase
 ### Phase 1
 
 ### Phase 2
-TODO:add pretraining
+TODO:download pretrained models, add pretraining
 
 Once the pretraining is complete, you can move to the target dataset:
 
