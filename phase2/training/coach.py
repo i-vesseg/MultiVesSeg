@@ -100,7 +100,7 @@ class Coach:
             self.ce_loss = ce_loss.CELoss().to(self.device).eval()
 
         # Initialize optimizer
-        self.optimizer, self.optimizer_seg = self.configure_optimizers()
+        self.optimizer, self.optimizer_residuals, self.optimizer_seg = self.configure_optimizers()
         self.scaler = torch.cuda.amp.GradScaler()
 
         # Initialize dataset
@@ -200,13 +200,16 @@ class Coach:
         while not finished_training:
             for batch in self.train_dataloader:
                 self.optimizer_seg.zero_grad()
+                self.optimizer_residuals.zero_grad()
                 self.optimizer.zero_grad()
 
                 with torch.cuda.amp.autocast():
                     x, y, y_hat, loss, loss_dict, id_logs = self.process_batch(batch)
+                
 
                 self.scaler.scale(loss).backward()
                 self.scaler.step(self.optimizer_seg)
+                self.scaler.step(self.optimizer_residuals)
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
 
@@ -453,7 +456,13 @@ class Coach:
                 f.write(f'Step - {self.global_step}, \n{loss_dict}\n')
 
     def configure_optimizers(self):
-        params = list(self.net.module.encoder.parameters())#PARALLEL
+        params_residuals = []
+        params = []#list(self.net.module.encoder.parameters())#PARALLEL
+        for name, param in self.net.module.encoder.named_parameters():
+            if "content_layers" in name:
+                params_residuals.append(param)
+            else:
+                params.append(param)
         if self.opts.train_decoder:
             params += list(self.net.module.decoder.parameters())#PARALLEL
         else:
@@ -462,8 +471,9 @@ class Coach:
             optimizer = torch.optim.Adam(params, lr=self.opts.learning_rate)
         else:
             optimizer = Ranger(params, lr=self.opts.learning_rate)
+        optimizer_residuals = torch.optim.Adam(params_residuals, lr=0.001)
         optimizer_seg = torch.optim.Adam(self.net.module.interpreter.classifiers.parameters(), lr=0.001)
-        return optimizer, optimizer_seg
+        return optimizer, optimizer_residuals, optimizer_seg
 
     def configure_datasets(self):
         if self.opts.dataset_type not in data_configs.DATASETS.keys():
