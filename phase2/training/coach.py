@@ -364,6 +364,10 @@ class Coach:
                     predicted_inter = np.concatenate([
                         predicted_inter, slice_prediction.cpu().numpy()
                     ]) if predicted_inter is not None else slice_prediction.cpu().numpy()
+                    if self.opts.invert_intensity:
+                        slice_translation = torch.where(
+                            torch.argmax(slice_prediction, dim=1, keepdim=True) == 0, -1*slice_translation, slice_translation
+                        )
                     translation = np.concatenate([
                         translation, slice_translation.cpu().numpy()
                     ]) if translation is not None else slice_translation.cpu().numpy()
@@ -401,6 +405,7 @@ class Coach:
                 metrics[curr_img_name] = {}
                 for label_idx in range(self.opts.label_nc):
                     if label_idx == 2 and self.opts.consider_only_vessels_within_brain:
+                        assert label_idx == len(self.opts.label_nc)-1, "This flag was intended for vessels, when brain=1 and vessels=2"
                         roi = np.logical_not(np.isclose(volume_orig, 0))#experts have labeled only vessels inside the brain
                     else:
                         roi = np.full(volume_orig.shape, True, dtype=bool)#experts have labeled all (within the weight mask)
@@ -417,6 +422,14 @@ class Coach:
                         metrics[curr_img_name][f"inter_hausdorff_{label_idx}"] = HD(binary_inter, binary_orig)
                         metrics[curr_img_name][f"dice_{label_idx}"] = DC(binary_ensemble, binary_orig)
                         metrics[curr_img_name][f"hausdorff_{label_idx}"] = HD(binary_ensemble, binary_orig)
+                
+                metrics[curr_img_name][f"intra_dice_foreground"] = DC(volume_intra, volume_orig)
+                metrics[curr_img_name][f"intra_hausdorff_foreground"] = HD(volume_intra, volume_orig)
+                if not self.opts.only_intra:
+                    metrics[curr_img_name][f"inter_dice_foreground"] = DC(volume_inter, volume_orig)
+                    metrics[curr_img_name][f"inter_hausdorff_foreground"] = HD(volume_inter, volume_orig)
+                    metrics[curr_img_name][f"dice_foreground"] = DC(volume_ensemble, volume_orig)
+                    metrics[curr_img_name][f"hausdorff_foreground"] = HD(volume_ensemble, volume_orig)
                 
                 print(curr_img_name, metrics[curr_img_name])
 

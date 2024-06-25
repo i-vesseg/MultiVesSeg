@@ -56,6 +56,7 @@ class Options(metaclass=Singleton):
         #extra features
         self.parser.add_argument('--only_intra', action="store_true", help='Whether to perform inter-domain translation or not.')
         self.parser.add_argument('--disable_residuals', action="store_true", help='Disable residual connections between E and G.')
+        self.parser.add_argument('--disable_DSBN', action="store_true", help='Disable domain-specific batch normalization.')
         self.parser.add_argument(
             '--invert_intensity', action="store_true", help='Invert intensity of target data.'
         )
@@ -85,7 +86,6 @@ class Options(metaclass=Singleton):
         self.parser.add_argument('--train_decoder', action='store_true', help='Whether to train the decoder model')
         self.parser.add_argument('--one_target_slice', action="store_true", help='Use only one annotated slice at target.')
         self.parser.add_argument('--disable_balanced_sampling', action="store_true", help='Disable balanced data sampling.')
-        self.parser.add_argument('--disable_DSBN', action="store_true", help='Disable domain-specific batch normalization.')
         self.parser.add_argument('--use_da', action="store_true", help='Use data augmentation.')
     
     def initialize_inference(self):
@@ -94,6 +94,9 @@ class Options(metaclass=Singleton):
         
         #postprocessing
         self.parser.add_argument('--do_flip', action="store_true", help='Flip nose orientation from upward to downward.')
+        
+        #extra features
+        self.parser.add_argument('--ensemble_size', default=5, type=int, help='Number of checkpoints to use at inference.')
 
     def parse(self):
         self.opts = self.parser.parse_args()

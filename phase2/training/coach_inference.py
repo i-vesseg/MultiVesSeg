@@ -14,7 +14,6 @@ from utils import common, train_utils
 from criteria import ce_loss, dice_loss, ssim_loss
 from criteria.lpips.lpips import LPIPS
 from configs import data_configs
-from configs.paths_config import model_paths
 from datasets.images_dataset import ImagesDataset, MyRandomSampler
 from models.psp import pSp
 
@@ -80,11 +79,7 @@ class Coach:
         self.net = pSp(self.opts)
         self.net = torch.nn.DataParallel(self.net, device_ids=[0]).to(self.device)#PARALLEL
 
-        # Estimate latent_avg via dense sampling if latent_avg is not available
-        if self.net.module.latent_avg is None:
-            with torch.no_grad():
-                mean_latents = self.net.module.decoder.mean_latent(int(1e5))
-                self.net.module.latent_avg = torch.nn.Parameter(mean_latents)#PARALLEL
+        assert self.net.module.latent_avg is not None
 
         # Initialize loss
         if self.opts.l2_lambda > 0:
@@ -155,7 +150,7 @@ class Coach:
                 y_hat = self.net.module.face_pool(y_hat)
                 y = self.net.module.face_pool(y)
                 
-                loss_intra, cur_loss_dict_intra, id_logs_intra = self.calc_loss(x, y, y_hat, latent, is_swi, weight_msk_loss=w)
+                loss_intra, cur_loss_dict_intra, id_logs_intra = self.calc_loss(x, y, y_hat, weight_msk_loss=w)
 
                 original = np.concatenate([
                     original, slice_original.cpu().numpy()
@@ -185,7 +180,7 @@ class Coach:
                     )
                     
                     loss_inter, cur_loss_dict_inter, id_logs_inter = self.calc_loss(
-                        x, y, torch.cat([y_cycle[:,:1], y_hat[:,1:]], dim=1), latent, is_swi, weight_msk_loss=w
+                        x, y, torch.cat([y_cycle[:,:1], y_hat[:,1:]], dim=1), weight_msk_loss=w
                     )
 
                     predicted_inter = np.concatenate([
@@ -235,132 +230,35 @@ class Coach:
                     volume_inter = np.argmax(volume_inter, axis=1)
                     volume_ensemble = np.argmax(volume_ensemble, axis=1)
                 
-                """idx_patient = [curr_img_name in p for p in info_val["preprocessed_paths"]].index(True)                
-
-                #postprocessing
-                (z_size, x_size, y_size) = info_val["shapesBeforePadding"][idx_patient]
-                volume_orig = volume_orig[
-                    :, (512-x_size) // 2: (512-x_size) // 2 + x_size, (512-y_size) // 2: (512-y_size) // 2 + y_size
-                ]
-                volume_intra = volume_intra[
-                    :, (512-x_size) // 2: (512-x_size) // 2 + x_size, (512-y_size) // 2: (512-y_size) // 2 + y_size
-                ]
-                if not self.opts.only_intra:
-                    volume_inter = volume_inter[
-                        :, (512-x_size) // 2: (512-x_size) // 2 + x_size, (512-y_size) // 2: (512-y_size) // 2 + y_size
-                    ]
-                    volume_ensemble = volume_ensemble[
-                        :, (512-x_size) // 2: (512-x_size) // 2 + x_size, (512-y_size) // 2: (512-y_size) // 2 + y_size
-                    ]
-                    volume_trans = volume_trans[
-                        :, (512-x_size) // 2: (512-x_size) // 2 + x_size, (512-y_size) // 2: (512-y_size) // 2 + y_size
-                    ]
-                
-                depth = info_val["depths"][idx_patient]
-                assert depth == len(volume_orig)
-                #if depth != len(volume):
-                    #volume = resize_segmentation(volume, [depth, *volume.shape[1:]], order=2)        
-                
-                first_slice, last_slice = info_val["z_splits"][idx_patient]
-                volume_orig = np.concatenate([
-                    np.zeros([first_slice, *volume_orig.shape[1:]], dtype=volume_orig.dtype),
-                    volume_orig,
-                    np.zeros([-1*last_slice, *volume_orig.shape[1:]], dtype=volume_orig.dtype),
-                ])
-                volume_intra = np.concatenate([
-                    np.zeros([first_slice, *volume_intra.shape[1:]], dtype=volume_intra.dtype),
-                    volume_intra,
-                    np.zeros([-1*last_slice, *volume_intra.shape[1:]], dtype=volume_intra.dtype),
-                ])
-                if not self.opts.only_intra:
-                    volume_inter = np.concatenate([
-                        np.zeros([first_slice, *volume_inter.shape[1:]], dtype=volume_inter.dtype),
-                        volume_inter,
-                        np.zeros([-1*last_slice, *volume_inter.shape[1:]], dtype=volume_inter.dtype),
-                    ])
-                    volume_ensemble = np.concatenate([
-                        np.zeros([first_slice, *volume_ensemble.shape[1:]], dtype=volume_ensemble.dtype),
-                        volume_ensemble,
-                        np.zeros([-1*last_slice, *volume_ensemble.shape[1:]], dtype=volume_ensemble.dtype),
-                    ])
-                    volume_trans = np.concatenate([
-                        np.zeros([first_slice, *volume_trans.shape[1:]], dtype=volume_trans.dtype),
-                        volume_trans,
-                        np.zeros([-1*last_slice, *volume_trans.shape[1:]], dtype=volume_trans.dtype),
-                    ])
-                
-                #inference (slow down otherwise)
-                (x_size, y_size, z_size) = info_val["shapesAfterCropping"][idx_patient]
-                volume_orig = resize_segmentation(volume_orig, [z_size, x_size, y_size], order=1)
-                volume_inter = resize_segmentation(volume_inter, [z_size, x_size, y_size], order=1)
-                volume_intra = resize_segmentation(volume_intra, [z_size, x_size, y_size], order=1)
-                volume_ensemble = resize_segmentation(volume_ensemble, [z_size, x_size, y_size], order=1)
-                volume_trans = resize(volume_trans, [z_size, x_size, y_size], 3, cval=0, mode='edge', anti_aliasing=False)
-                
-                (x_size, y_size, z_size) = info_val["shapes"][idx_patient]
-                crop = info_val["crops"][idx_patient]
-                final_volume = np.zeros((x_size, y_size, z_size), dtype=volume_orig.dtype)
-                final_volume[crop] = volume_orig.transpose(1, 2, 0)
-                volume_orig = final_volume
-                final_volume = np.zeros((x_size, y_size, z_size), dtype=volume_inter.dtype)
-                final_volume[crop] = volume_inter.transpose(1, 2, 0)
-                volume_inter = final_volume
-                final_volume = np.zeros((x_size, y_size, z_size), dtype=volume_intra.dtype)
-                final_volume[crop] = volume_intra.transpose(1, 2, 0)
-                volume_intra = final_volume
-                final_volume = np.zeros((x_size, y_size, z_size), dtype=volume_ensemble.dtype)
-                final_volume[crop] = volume_ensemble.transpose(1, 2, 0)
-                volume_ensemble = final_volume
-                final_volume = np.zeros((x_size, y_size, z_size), dtype=volume_trans.dtype)
-                final_volume[crop] = volume_trans.transpose(1, 2, 0)
-                volume_trans = final_volume
-                
-                affine, header = info_val["metadata"][idx_patient]["brain"]["affine"], info_val["metadata"][idx_patient]["brain"]["header"]
-                pred_dict[curr_img_name] = {
-                    "inter":  volume_inter,
-                    "intra":  volume_intra,
-                    "trans":  volume_trans,
-                    "affine": affine,
-                    "header": header,
-                }
-                nib.save(
-                    nib.Nifti1Image(volume_inter.astype(float), affine, header),
-                    os.path.join(self.opts.exp_dir, f"{curr_img_name}_pred.nii.gz")
-                )
-                nib.save(
-                    nib.Nifti1Image(volume_intra.astype(float), affine, header),
-                    os.path.join(self.opts.exp_dir, f"{curr_img_name}_intra.nii.gz")
-                )
-                nib.save(
-                    nib.Nifti1Image(volume_trans.astype(float), affine, header),
-                    os.path.join(self.opts.exp_dir, f"{curr_img_name}_trans.nii.gz")
-                )"""
-                
-                if self.opts.label_nc == 3:
-                    if not self.opts.consider_all_vessels:
+                metrics[curr_img_name] = {}
+                for label_idx in range(self.opts.label_nc):
+                    if label_idx == 2 and self.opts.consider_only_vessels_within_brain:
+                        assert label_idx == len(self.opts.label_nc)-1, "This flag was intended for vessels, when brain=1 and vessels=2"
                         roi = np.logical_not(np.isclose(volume_orig, 0))#experts have labeled only vessels inside the brain
                     else:
-                        roi = np.full(volume_orig.shape, True, dtype=bool)#experts have labeled all vessels (within the weight mask)
-                    vessels_orig = np.isclose(volume_orig, 2)
-                    vessels_intra = np.logical_and(np.isclose(volume_intra, 2), roi)
+                        roi = np.full(volume_orig.shape, True, dtype=bool)#experts have labeled all (within the weight mask)
+                    binary_orig = np.logical_and(np.isclose(volume_orig, label_idx), roi)
+                    binary_intra = np.logical_and(np.isclose(volume_intra, label_idx), roi)
                     if not self.opts.only_intra:
-                        vessels_inter = np.logical_and(np.isclose(volume_inter, 2), roi)
-                        vessels_ensemble = np.logical_and(np.isclose(volume_ensemble, 2), roi)
-                else:
-                    vessels_orig = volume_orig
-                    vessels_intra = volume_intra
+                        binary_inter = np.logical_and(np.isclose(volume_inter, label_idx), roi)
+                        binary_ensemble = np.logical_and(np.isclose(volume_ensemble, label_idx), roi)
+                    
+                    metrics[curr_img_name][f"intra_dice_{label_idx}"] = DC(binary_intra, binary_orig)
+                    metrics[curr_img_name][f"intra_hausdorff_{label_idx}"] = HD(binary_intra, binary_orig)
                     if not self.opts.only_intra:
-                        vessels_inter = volume_inter
-                        vessels_ensemble = volume_ensemble
-
-                metrics[curr_img_name] = {}
-                metrics[curr_img_name]["intra_dice_vessels"] = DC(vessels_intra, vessels_orig)
-                metrics[curr_img_name]["intra_hausdorff_vessels"] = HD(vessels_intra, vessels_orig)
+                        metrics[curr_img_name][f"inter_dice_{label_idx}"] = DC(binary_inter, binary_orig)
+                        metrics[curr_img_name][f"inter_hausdorff_{label_idx}"] = HD(binary_inter, binary_orig)
+                        metrics[curr_img_name][f"dice_{label_idx}"] = DC(binary_ensemble, binary_orig)
+                        metrics[curr_img_name][f"hausdorff_{label_idx}"] = HD(binary_ensemble, binary_orig)
+                
+                metrics[curr_img_name][f"intra_dice_foreground"] = DC(volume_intra, volume_orig)
+                metrics[curr_img_name][f"intra_hausdorff_foreground"] = HD(volume_intra, volume_orig)
                 if not self.opts.only_intra:
-                    metrics[curr_img_name]["inter_dice_vessels"] = DC(vessels_inter, vessels_orig)
-                    metrics[curr_img_name]["inter_hausdorff_vessels"] = HD(vessels_inter, vessels_orig)
-                    metrics[curr_img_name]["dice_vessels"] = DC(vessels_ensemble, vessels_orig)
-                    metrics[curr_img_name]["hausdorff_vessels"] = HD(vessels_ensemble, vessels_orig)
+                    metrics[curr_img_name][f"inter_dice_foreground"] = DC(volume_inter, volume_orig)
+                    metrics[curr_img_name][f"inter_hausdorff_foreground"] = HD(volume_inter, volume_orig)
+                    metrics[curr_img_name][f"dice_foreground"] = DC(volume_ensemble, volume_orig)
+                    metrics[curr_img_name][f"hausdorff_foreground"] = HD(volume_ensemble, volume_orig)
+                
                 print(curr_img_name, metrics[curr_img_name])
 
                 original = original[until:] if until is not None else None
@@ -407,41 +305,56 @@ class Coach:
         print(f"Number of test samples: {len(test_dataset)}")
         return test_dataset
 
-    def calc_loss(self, x, y, y_hat, latent, is_swi, where_msk_loss=None, weight_msk_loss=None):
-        weight_img_loss = torch.where(
-            is_swi,
-            y_hat[:,-1:].permute(1, 2, 3, 0) * 0,
-            (y[:,-1:].permute(1, 2, 3, 0) + 1) / 2,
-        ).permute(3, 0, 1, 2)
-        weight_img_loss = torch.where(weight_img_loss < 0.5, 0.3, 1.0)
+    def find_favoured_channels(self):
+        ce_weights, dice_weights = self.opts.ce_weights, self.opts.dice_weights
+        if ce_weights is None and dice_weights is None:
+            seg_weights = None
+        elif ce_weights is not None and dice_weights is not None:
+            if max(ce_weights) >= max(dice_weights):
+                seg_weights = ce_weights
+            else:
+                seg_weights = dice_weights
+        elif ce_weights is not None:
+            seg_weights = ce_weights
+        else:
+            seg_weights = dice_weights
         
-        img_loss = dict(zip(["loss", "loss_dict", "id_logs"], self._img_loss(
-            x*weight_img_loss, y_hat[:,:1]*weight_img_loss, latent
-        )))
-        
+        if seg_weights is None:
+            return np.array([True] * self.opts.label_nc)
+        else:
+            return np.isclose(seg_weights, max(seg_weights))
+    
+    def calc_loss(self, x, y, y_hat, where_msk_loss=None, weight_msk_loss=None):    
         if where_msk_loss is None:
             where_msk_loss = torch.ones(y.shape[0], dtype=torch.bool, device=y.device)
-        assert torch.any(where_msk_loss)
+        assert torch.any(where_msk_loss) or self.opts.only_intra
+        
+        if self.opts.ce_weights is not None or self.opts.dice_weights is not None:
+            favoured_channels = torch.tensor(self.find_favoured_channels(), dtype=torch.bool, device=y.device)
+            weight_img_loss_where_msk_loss = y[where_msk_loss]
+            weight_img_loss_where_msk_loss = weight_img_loss_where_msk_loss[:, favoured_channels]
+            weight_img_loss_where_msk_loss = torch.any(weight_img_loss_where_msk_loss > 0.5, dim=1)
+            weight_img_loss = torch.zeros(x.shape, dtype=bool, device=x.device)
+            weight_img_loss[where_msk_loss] = weight_img_loss_where_msk_loss[:,None]
+            weight_img_loss = torch.where(weight_img_loss, 1.0, 0.3)
+        else:
+            weight_img_loss = x * 0 + 1
+        
+        img_loss = dict(zip(["loss", "loss_dict", "id_logs"], self._img_loss(
+            x*weight_img_loss, y_hat[:,:1]*weight_img_loss
+        )))
         
         if weight_msk_loss is None:
             weight_msk_loss = torch.ones(x.shape, dtype=y.dtype, device=y.device)
             
-        #opzione 1
-        #y[weight_msk_loss.repeat(1, 3, 1, 1)==0] = y_hat[:,1:][weight_msk_loss.repeat(1, 3, 1, 1)==0]
-        
-        #opzione 2: detach
-        
-        #opzione 3: trova le size e seleziona con reshape
-        
-        #opzione 0: moltiplicazione
         msk_loss = dict(zip(["loss", "loss_dict", "id_logs"], self._msk_loss(
-            y[where_msk_loss]*weight_msk_loss[where_msk_loss], y_hat[where_msk_loss,1:]*weight_msk_loss[where_msk_loss], latent
+            y[where_msk_loss]*weight_msk_loss[where_msk_loss], y_hat[where_msk_loss,1:]*weight_msk_loss[where_msk_loss]
         )))
         
         img_loss["loss_dict"]["loss"] = img_loss["loss_dict"]["loss_img"] + msk_loss["loss_dict"]["loss_msk"]
         return img_loss["loss"] + msk_loss["loss"], {**img_loss["loss_dict"], **msk_loss["loss_dict"]}, img_loss["id_logs"] 
     
-    def _msk_loss(self, y, y_hat, latent):
+    def _msk_loss(self, y, y_hat):
         loss_dict = {}
         loss = 0.0
         id_logs = None
@@ -456,7 +369,7 @@ class Coach:
         loss_dict['loss_msk'] = float(loss)
         return loss, loss_dict, id_logs
     
-    def _img_loss(self, y, y_hat, latent):
+    def _img_loss(self, y, y_hat):
         loss_dict = {}
         loss = 0.0
         id_logs = None

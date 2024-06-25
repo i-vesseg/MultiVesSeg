@@ -32,9 +32,8 @@ def check_is_train():
         raise Exception("Something is wrong with your configs folder")
 check_is_train()
 
-from options.test_options import TestOptions
+from options import Options
 from training.coach_inference import Coach
-from configs.paths_config import model_paths
 from configs import data_configs
 from utils import data_utils
 
@@ -47,17 +46,8 @@ def get_best_models(checkpoint_dir):
 
     return [os.path.join(checkpoint_dir, model_name[0]) for model_name in best_models]
 
-with open(model_paths["metadata"], "rb") as file:
-    info_val = pickle.load(file)["test"]
-print("TODO: move shapesAfterCropping to preprocessing")
-def get_slice_size(slc):
-    return len(range(*slc.indices(slc.stop)))
-def cropToShape(crop):
-    return [get_slice_size(c) for c in crop]
-info_val["shapesAfterCropping"] = [cropToShape(crop) for crop in info_val["crops"]]
-
 def main():
-    opts = TestOptions().parse()
+    opts = Options(is_train=False).parse()
     if os.path.exists(opts.exp_dir):
         raise Exception('Oops... {} already exists'.format(opts.exp_dir))
     os.makedirs(opts.exp_dir)
@@ -66,6 +56,14 @@ def main():
     pprint.pprint(opts_dict)
     with open(os.path.join(opts.exp_dir, 'opt.json'), 'w') as f:
         json.dump(opts_dict, f, indent=4, sort_keys=True)
+    
+    with open(opts.metadata, "rb") as file:
+        info_val = pickle.load(file)["test"]
+    def get_slice_size(slc):
+        return len(range(*slc.indices(slc.stop)))
+    def cropToShape(crop):
+        return [get_slice_size(c) for c in crop]
+    info_val["shapesAfterCropping"] = [cropToShape(crop) for crop in info_val["crops"]]
     
     ckpts = get_best_models(opts.checkpoint_dir)
     
@@ -88,7 +86,7 @@ def main():
             inter_pred = 0
             volume_trans = 0        
         
-        for ckpt in ckpts:#[-3:]:
+        for ckpt in ckpts[-1*opts.ensemble_size:]:
             opts.checkpoint_path = ckpt
             global_step = torch.load(ckpt, map_location='cpu')["global_step"]
             coach = Coach(opts, global_step)
