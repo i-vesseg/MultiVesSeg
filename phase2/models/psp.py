@@ -9,7 +9,6 @@ import torch
 from torch import nn
 from models.encoders import feature_style_encoder
 from models.stylegan2.model import Generator
-from configs.paths_config import model_paths
 from models.interpreter.interpreter import Interpreter
 import gc
 
@@ -34,7 +33,7 @@ class pSp(nn.Module):
         self.opts.n_styles = int(math.log(self.opts.output_size, 2)) * 2 - 2
         # Define architecture
         self.encoder = feature_style_encoder.fs_encoder_v2(
-            self.opts.n_styles, model_paths['arcface_model'],
+            self.opts.n_styles, self.opts.arcface_model,
             residual=not self.opts.disable_residuals, DSBN=not self.opts.disable_DSBN
         )
         self.decoder = Generator(self.opts.output_size, 512, 8, opts.n_domains)

@@ -1,4 +1,5 @@
 ## MultiVesSeg &mdash; Official PyTorch Implementation
+<div align="justify">
 
 ![Teaser image](./MRA_CTA_MRV.png)
 **Picture:** *Maximum intensity projection (MIP) of a magnetic resonance angiography (left), MIP of a computed tomography angiography (center), and minimum intensity projection (mIP) of a magnetic resonance venography (right). All images are skull-stripped and viewed from the axial perspective.*
@@ -10,6 +11,8 @@ This repository contains the official PyTorch implementation of the following pa
 > Under review
 >
 > **Abstract:** *The intricate morphology of brain vessels poses significant challenges for automatic segmentation models, which usually focus on a single imaging modality. However, accurately treating brain-related conditions requires a comprehensive understanding of the cerebrovascular tree regardless of the specific acquisition procedure. Through image-to-image translation, our framework effectively segments brain arteries and veins in various datasets, while avoiding domain-specific model design and data harmonization between the source and the target domain. This is accomplished by employing disentanglement techniques to independently manipulate different image properties, allowing to move from one domain to the other in a label-preserving manner. Specifically, we focus on the manipulation of vessel appearances during adaptation, while preserving spatial information such as shapes and locations, which are crucial for correct segmentation. Our evaluation demonstrates efficacy in bridging large and varied domain gaps across different medical centers, image modalities, and vessel types. Additionally, we conduct ablation studies on the optimal number of required annotations and other architectural choices. The results obtained highlight the robustness and versatility of our framework, demonstrating the potential of domain adaptation methodologies to perform cerebrovascular image segmentation accurately in multiple scenarios.*
+
+</div>
 
 ## System requirements
 - batchgenerators==0.24
@@ -26,17 +29,47 @@ This repository contains the official PyTorch implementation of the following pa
 - torch==1.9.1+cu111
 
 ## Preparing datasets for training
+<div align="justify">
 
-Folder `preprocessing` contains the Jupyter notebooks used to prepare the datasets utilized in our experiments: OASIS tocite, IXI tocite, and TopCow tocite. To preprocess your own dataset, create a new notebook by following the structure of the existing ones.
+Folder `preprocessing` contains the Jupyter notebooks used to prepare the datasets utilized in our experiments: [OASIS](https://doi.org/10.1101/2019.12.13.19014902), [IXI](https://brain-development.org/ixi-dataset), and [TopCow](https://arxiv.org/abs/2312.17670). To preprocess your own dataset, create a new notebook by following the structure of the existing ones.
+
+</div>
 
 ## Training networks
 
 ### Phase 1
 
-### Phase 2
-TODO:download pretrained models, add pretraining
+To prepare the training data, you can run the following command:
 
-Once the pretraining is complete, you can move to the target dataset:
+```
+python prepare_data.py --out ${DATA_dir} --size 512 --src_path ${SRC_dir}/train/ --tgt_path ${TGT_dir}/train/
+```
+
+Once the data is prepared, you can begin training the generator with the following command:
+
+```
+python -m torch.distributed.launch --nproc_per_node=2 train.py ${DATA_dir} --size 512 --n_sample 8 --iter 250000 --augment
+```
+
+### Phase 2
+First, download the required pre-trained models and store them into a new directory:
+
+| phase2/pretrained_models |
+| :--- |
+| &boxvr;&nbsp; [alex.pth](https://github.com/richzhang/PerceptualSimilarity/raw/refs/heads/master/lpips/weights/v0.1/alex.pth) |
+| &boxvr;&nbsp; [alex_pretr.pth](https://download.pytorch.org/models/alexnet-owt-7be5be79.pth) |
+| &boxvr;&nbsp; [backbone.pth](https://drive.google.com/file/d/1coFTz-Kkgvoc_gRT8JFzqCgeC3lAFWQp) |
+
+Before performing domain adaptation, you need to pre-train the source segmentation branch. To do so, follow these steps:
+
+1) Edit the configuration files `data_configs.py` and `paths_config.py`  inside folder `configs_pretrain`.
+
+2) Start the pre-training script.
+```
+python scripts/pretrain.py --exp_dir=${SRC_exp_dir} --batch_size 8 --start_from_latent_avg --label_nc=3 --max_steps=15000 --stylegan_weights ${PHASE1_dir}/checkpoint/final_checkpoint.pt --only_intra --src_label 0
+```
+
+Once the pre-training is complete, you can move to the target dataset:
 
 1) Split the preprocessed target data into `labeled` and `unlabeled`.
 ```
@@ -52,14 +85,14 @@ mv ${TGT_dir}/train/unlabeled/${ID_3}_slice* ${TGT_dir}/train/labeled
 
 3) Start the training script.
 ```
-python train.py --dataset_type=HQSWI --exp_dir=${tgt_dir} --workers=6 --batch_size=4 --test_batch_size=8 --test_workers=6 --start_from_latent_avg --output_size=512 --input_nc=1 --label_nc=3 --max_steps=${TGT_STEPS} --checkpoint_dir=${src_dir}/checkpoints  --one_target_slice --src_label 0 --tgt_label 1
+python scripts/train.py --exp_dir=${TGT_exp_dir} --start_from_latent_avg --label_nc=3 --max_steps=20000 --checkpoint_dir=${SRC_exp_dir}/checkpoints  --one_target_slice --src_label 0 --tgt_label 1
 ```
 
 ## Running inference
 
-1) Edit the configuration files `data_configs.py` and `paths_config.py`  inside folder `configs_train`.
+To start the inference script, you can use this command:
+```
+python scripts/inference.py --metadata=${INFO_path} --exp_dir=${TEST_dir} --start_from_latent_avg --label_nc=4 --checkpoint_dir=${TGT_exp_dir}/checkpoints --src_label 0 --tgt_label 1
+```
 
-2) Start the inference script.
-```
-python scripts/inference.py --dataset_type=HQSWI --exp_dir=${inf_dir} --test_batch_size=8 --test_workers=6 --start_from_latent_avg --output_size=512 --input_nc=1 --label_nc=3 --checkpoint_dir=${tgt_dir}/checkpoints --src_label 0 --tgt_label 1
-```
+Please note that the .pkl file located at `${INFO_path}` was generated by the Jupyter notebook during preprocessing, provided it was executed correctly.

@@ -23,7 +23,7 @@ def check_is_pretrain():
         raise Exception("Something is wrong with your configs folder")
 check_is_pretrain()
 
-from options.train_options import TrainOptions
+from options import Options
 from training.coach import Coach
 
 def get_best_model(checkpoint_dir):
@@ -37,7 +37,7 @@ def get_best_model(checkpoint_dir):
     return checkpoint_path
 
 def main():
-    opts = TrainOptions().parse()
+    opts = Options(is_train=True).parse()
     if os.path.exists(opts.exp_dir):
         raise Exception('Oops... {} already exists'.format(opts.exp_dir))
     os.makedirs(opts.exp_dir)
@@ -45,9 +45,6 @@ def main():
     opts.checkpoint_path = None
     if opts.checkpoint_dir is not None:
         opts.checkpoint_path = get_best_model(opts.checkpoint_dir)
-    
-    if opts.invert_intensity:
-        opts.invert_intensity = False
     
     opts_dict = vars(opts)
     pprint.pprint(opts_dict)
