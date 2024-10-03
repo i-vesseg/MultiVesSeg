@@ -99,7 +99,7 @@ class Coach:
             self.ce_loss = ce_loss.CELoss().to(self.device).eval()
 
         # Initialize optimizer
-        self.optimizer, self.optimizer_residuals, self.optimizer_seg = self.configure_optimizers()
+        self.optimizer, self.optimizer_seg = self.configure_optimizers()
         self.scaler = torch.cuda.amp.GradScaler()
 
         # Initialize dataset
@@ -199,7 +199,6 @@ class Coach:
         while not finished_training:
             for batch in self.train_dataloader:
                 self.optimizer_seg.zero_grad()
-                self.optimizer_residuals.zero_grad()
                 self.optimizer.zero_grad()
 
                 with torch.cuda.amp.autocast():
@@ -208,7 +207,6 @@ class Coach:
 
                 self.scaler.scale(loss).backward()
                 self.scaler.step(self.optimizer_seg)
-                self.scaler.step(self.optimizer_residuals)
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
 
@@ -242,7 +240,9 @@ class Coach:
 
                     current_worst = self.best_val_loss[0][1]
                     current_dice = []
-                    for idx_channel, take_channel in enumerate(self.find_favoured_channels()):
+                    for idx_channel, take_channel in enumerate(
+                        self.find_favoured_channels() if self.opts.optimize_mode=="favoured" else [False] + [True] * (self.opts.label_nc-1)
+                    ):
                         if take_channel:
                             current_dice += [[val_loss_dict[k] for k in sorted(val_loss_dict.keys()) if f"dice_{idx_channel}" in k]]
                     current_dice = np.mean(current_dice, axis=0)
@@ -461,13 +461,7 @@ class Coach:
                 f.write(f'Step - {self.global_step}, \n{loss_dict}\n')
 
     def configure_optimizers(self):
-        params_residuals = []
-        params = []#list(self.net.module.encoder.parameters())#PARALLEL
-        for name, param in self.net.module.encoder.named_parameters():
-            if "content_layers" in name:
-                params_residuals.append(param)
-            else:
-                params.append(param)
+        params = list(self.net.module.encoder.parameters())#PARALLEL
         if self.opts.train_decoder:
             params += list(self.net.module.decoder.parameters())#PARALLEL
         else:
@@ -476,9 +470,8 @@ class Coach:
             optimizer = torch.optim.Adam(params, lr=self.opts.learning_rate)
         else:
             optimizer = Ranger(params, lr=self.opts.learning_rate)
-        optimizer_residuals = torch.optim.Adam(params_residuals, lr=0.001)
         optimizer_seg = torch.optim.Adam(self.net.module.interpreter.classifiers.parameters(), lr=0.001)
-        return optimizer, optimizer_residuals, optimizer_seg
+        return optimizer, optimizer_seg
 
     def configure_datasets(self):
         if self.opts.dataset_type not in data_configs.DATASETS.keys():
@@ -527,7 +520,7 @@ class Coach:
             where_msk_loss = torch.ones(y.shape[0], dtype=torch.bool, device=y.device)
         assert torch.any(where_msk_loss) or self.opts.only_intra
         
-        if self.opts.ce_weights is not None or self.opts.dice_weights is not None:
+        if self.opts.optimize_mode == "favoured" and (self.opts.ce_weights is not None or self.opts.dice_weights is not None):
             favoured_channels = torch.tensor(self.find_favoured_channels(), dtype=torch.bool, device=y.device)
             weight_img_loss_where_msk_loss = y[where_msk_loss]
             weight_img_loss_where_msk_loss = weight_img_loss_where_msk_loss[:, favoured_channels]
