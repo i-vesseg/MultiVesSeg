@@ -54,8 +54,8 @@ python -m torch.distributed.launch --nproc_per_node=2 train.py ${DATA_dir} --siz
 ### Phase 2
 First, download the required pre-trained models and store them into a new directory:
 
-| Additional material | &nbsp;
-| :--- | :----------
+| Additional material |
+| :--- |
 | [StyleGAN2](https://drive.google.com/open?id=1QHc-yF5C3DChRwSdZKcx1w6K8JvSxQi7) |
 
 | :---
