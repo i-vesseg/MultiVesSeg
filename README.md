@@ -54,6 +54,10 @@ python -m torch.distributed.launch --nproc_per_node=2 train.py ${DATA_dir} --siz
 ### Phase 2
 First, download the required pre-trained models and store them into a new directory:
 
+| Additional material | &nbsp;
+| :--- | :----------
+| [StyleGAN2](https://drive.google.com/open?id=1QHc-yF5C3DChRwSdZKcx1w6K8JvSxQi7) |
+
 | :---
 | phase2/pretrained_models
 | &boxvr;&nbsp; [alex.pth](https://github.com/richzhang/PerceptualSimilarity/raw/refs/heads/master/lpips/weights/v0.1/alex.pth)
