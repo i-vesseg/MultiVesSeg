@@ -54,9 +54,8 @@ python -m torch.distributed.launch --nproc_per_node=2 train.py ${DATA_dir} --siz
 ### Phase 2
 First, download the required pre-trained models and store them into a new directory:
 
-| Additional material |
-| :--- |
 | phase2/pretrained_models |
+| :--- |
 | &boxvr;&nbsp; [alex.pth](https://github.com/richzhang/PerceptualSimilarity/raw/refs/heads/master/lpips/weights/v0.1/alex.pth) |
 | &boxvr;&nbsp; [alex_pretr.pth](https://download.pytorch.org/models/alexnet-owt-7be5be79.pth) |
 | &boxvr;&nbsp; [backbone.pth](https://drive.google.com/file/d/1coFTz-Kkgvoc_gRT8JFzqCgeC3lAFWQp) |
