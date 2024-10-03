@@ -226,10 +226,10 @@ class TransformsConfig(object):
     def get_transforms(self):
         pass
 
-class MyInpaintingTransforms(TransformsConfig):
+class MyTransforms(TransformsConfig):
 
     def __init__(self, opts):
-        super(MyInpaintingTransforms, self).__init__(opts)
+        super(MyTransforms, self).__init__(opts)
 
     def get_transforms(self):
         transforms_dict = {
