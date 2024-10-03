@@ -26,7 +26,7 @@ class Options(metaclass=Singleton):
         )
         
         #dataset
-        self.parser.add_argument('--dataset_type', default='ffhq_encode', type=str, help='Type of dataset/experiment to run')
+        self.parser.add_argument('--dataset_type', default='HQSWI', type=str, help='Type of dataset/experiment to run')
         self.parser.add_argument('--input_nc', default=1, type=int, help='Number of input image channels to the psp encoder')
         self.parser.add_argument('--label_nc', default=3, type=int, help='Number of input label channels to the psp encoder')
         self.parser.add_argument('--output_size', default=512, type=int, help='Output size of generator')        #federated
