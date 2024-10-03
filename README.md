@@ -56,13 +56,10 @@ First, download the required pre-trained models and store them into a new direct
 
 | Additional material |
 | :--- |
-| [StyleGAN2](https://drive.google.com/open?id=1QHc-yF5C3DChRwSdZKcx1w6K8JvSxQi7) |
-
-| :---
-| phase2/pretrained_models
-| &boxvr;&nbsp; [alex.pth](https://github.com/richzhang/PerceptualSimilarity/raw/refs/heads/master/lpips/weights/v0.1/alex.pth)
-| &boxvr;&nbsp; [alex_pretr.pth](https://download.pytorch.org/models/alexnet-owt-7be5be79.pth)
-| &boxvr;&nbsp; [backbone.pth](https://drive.google.com/file/d/1coFTz-Kkgvoc_gRT8JFzqCgeC3lAFWQp)
+| phase2/pretrained_models |
+| &boxvr;&nbsp; [alex.pth](https://github.com/richzhang/PerceptualSimilarity/raw/refs/heads/master/lpips/weights/v0.1/alex.pth) |
+| &boxvr;&nbsp; [alex_pretr.pth](https://download.pytorch.org/models/alexnet-owt-7be5be79.pth) |
+| &boxvr;&nbsp; [backbone.pth](https://drive.google.com/file/d/1coFTz-Kkgvoc_gRT8JFzqCgeC3lAFWQp) |
 
 Before performing domain adaptation, you need to pre-train the source segmentation branch. To do so, follow these steps:
 
