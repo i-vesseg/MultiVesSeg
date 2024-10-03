@@ -82,6 +82,12 @@ class Options(metaclass=Singleton):
         self.parser.add_argument('--val_interval', default=1000, type=int, help='Validation interval')
         self.parser.add_argument('--save_interval', default=None, type=int, help='Model checkpoint interval')
         
+        #validation
+        self.parser.add_argument(
+            '--optimize_mode', default='foreground', type=str,
+            help="Which channels to optimize: all 'foreground' channels or only 'favoured'"
+        )
+        
         #extra features
         self.parser.add_argument('--train_decoder', action='store_true', help='Whether to train the decoder model')
         self.parser.add_argument('--one_target_slice', action="store_true", help='Use only one annotated slice at target.')
