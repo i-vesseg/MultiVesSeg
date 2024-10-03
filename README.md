@@ -39,7 +39,7 @@ Folder `preprocessing` contains the Jupyter notebooks used to prepare the datase
 
 ### Phase 1
 
-To prepare the training data, you can run the following command:
+This phase requires one additional step to prepare the training data, which can be executed using the following command:
 
 ```
 python prepare_data.py --out ${DATA_dir} --size 512 --src_path ${SRC_dir}/train/ --tgt_path ${TGT_dir}/train/
