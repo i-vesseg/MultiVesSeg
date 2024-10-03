@@ -5,7 +5,7 @@ from configs import transforms_config
 
 DATASETS = {
     'HQSWI': {
-        'transforms': transforms_config.MyInpaintingTransforms,
+        'transforms': transforms_config.MyTransforms,
         'train_source_root': "/data/galati/brain_data/preprocessing_brain_data/preprocess_OASIS/train",
         'train_target_root': {
             "unlabeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_HQSWI/train/unlabeled",
@@ -26,7 +26,7 @@ DATASETS = {
 
 # DATASETS = {
 #     'HQSWI': {
-#         'transforms': transforms_config.MyInpaintingTransforms,
+#         'transforms': transforms_config.MyTransforms,
 #         'train_source_root': "/data/galati/brain_data/preprocessing_brain_data/preprocess_OASIS/train",
 #         'train_target_root': {
 #             "unlabeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_IXI/train/unlabeled",
@@ -47,7 +47,7 @@ DATASETS = {
 
 # DATASETS = {
 #     'HQSWI': {
-#         'transforms': transforms_config.MyInpaintingTransforms,
+#         'transforms': transforms_config.MyTransforms,
 #         'train_source_root': "/data/galati/brain_data/preprocessing_brain_data/preprocess_OASIS/train",
 #         'train_target_root': {
 #             "unlabeled": "/data/galati/brain_data/preprocessing_brain_data/preprocess_TopCow/train/unlabeled",
