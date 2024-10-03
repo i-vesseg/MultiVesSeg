@@ -31,7 +31,9 @@ This repository contains the official PyTorch implementation of the following pa
 ## Preparing datasets for training
 <div align="justify">
 
-Folder `preprocessing` contains the Jupyter notebooks used to prepare the datasets utilized in our experiments: OASIS tocite, IXI tocite, and TopCow tocite. To preprocess your own dataset, create a new notebook by following the structure of the existing ones.
+Folder `preprocessing` contains the Jupyter notebooks used to prepare the datasets utilized in our experiments: 
+
+[OASIS](https://doi.org/10.1101/2019.12.13.19014902), [IXI](https://brain-development.org/ixi-dataset), and [TopCow](https://arxiv.org/abs/2312.17670). To preprocess your own dataset, create a new notebook by following the structure of the existing ones.
 
 </div>
 
