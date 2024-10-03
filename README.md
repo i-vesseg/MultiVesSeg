@@ -45,7 +45,7 @@ To prepare the training data, you can run the following command:
 python prepare_data.py --out ${DATA_dir} --size 512 --src_path ${SRC_dir}/train/ --tgt_path ${TGT_dir}/train/
 ```
 
-Once the data is ready, you can begin training the generator with the following command:
+Once the data is prepared, you can begin training the generator with the following command:
 
 ```
 python -m torch.distributed.launch --nproc_per_node=2 train.py ${DATA_dir} --size 512 --n_sample 8 --iter 250000 --augment
