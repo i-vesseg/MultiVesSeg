@@ -62,7 +62,7 @@ First, download the required pre-trained models and store them into a new direct
 
 Before performing domain adaptation, you need to pre-train the source segmentation branch. To do so, follow these steps:
 
-1) Edit the configuration files `data_configs.py` and `paths_config.py`  inside folder `configs_pretrain`.
+1) Edit the configuration file `data_configs.py` inside the folder `configs_pretrain`.
 
 2) Start the pre-training script.
 ```
@@ -81,7 +81,7 @@ mv ${TGT_dir}/train/unlabeled/${ID_2}_slice* ${TGT_dir}/train/labeled
 mv ${TGT_dir}/train/unlabeled/${ID_3}_slice* ${TGT_dir}/train/labeled
 ```
 
-2) Edit the configuration files `data_configs.py` and `paths_config.py`  inside folder `configs_train`.
+2) Edit the configuration file `data_configs.py` inside the folder `configs_train`.
 
 3) Start the training script.
 ```
