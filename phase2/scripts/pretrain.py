@@ -5,6 +5,7 @@ import os
 import json
 import sys
 import pprint
+import time
 
 sys.path.append(".")
 sys.path.append("..")
@@ -39,13 +40,14 @@ def get_best_model(checkpoint_dir):
 def main():
     opts = Options(is_train=True).parse()
     if os.path.exists(opts.exp_dir):
-        raise Exception('Oops... {} already exists'.format(opts.exp_dir))
+        print('Oops... {} already exists'.format(opts.exp_dir))
+        # Add a timestamp to the experiment directory
+        opts.exp_dir = opts.exp_dir + '_' + str(int(time.time()))
     os.makedirs(opts.exp_dir)
 
     opts.checkpoint_path = None
     if opts.checkpoint_dir is not None:
         opts.checkpoint_path = get_best_model(opts.checkpoint_dir)
-    
     opts_dict = vars(opts)
     pprint.pprint(opts_dict)
     with open(os.path.join(opts.exp_dir, 'opt.json'), 'w') as f:

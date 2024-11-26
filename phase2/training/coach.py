@@ -1,6 +1,7 @@
 import os
 import matplotlib
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 matplotlib.use('Agg')
 
@@ -196,8 +197,10 @@ class Coach:
     def train(self):
         self.net.train()
         finished_training = False
+        print(f'Starting training... Max steps: {self.opts.max_steps}') 
         while not finished_training:
-            for batch in self.train_dataloader:
+            for batch in tqdm(self.train_dataloader):
+                print(f"Step {self.global_step} started")
                 self.optimizer_seg.zero_grad()
                 self.optimizer.zero_grad()
 
@@ -230,12 +233,14 @@ class Coach:
                     self.log_metrics(loss_dict, prefix='train')
                 
                 if self.global_step == 0:
+                    print(f"Skipping val step {self.global_step}")
                     self.global_step += 1
                     continue
                     
                 # Validation related
                 val_loss_dict = None
                 if self.global_step % self.opts.val_interval == 0 or self.global_step == self.opts.max_steps:
+                    print(f'Running validation at step {self.global_step}')
                     val_loss_dict = self.validate()
 
                     current_worst = self.best_val_loss[0][1]
@@ -245,14 +250,20 @@ class Coach:
                     ):
                         if take_channel:
                             current_dice += [[val_loss_dict[k] for k in sorted(val_loss_dict.keys()) if f"dice_{idx_channel}" in k]]
+                    
                     current_dice = np.mean(current_dice, axis=0)
+                    print(f"AAAAA Current dice: {current_dice}")
+                    print(f"AAAAA Current worst: {current_worst}")
                     if np.any(current_dice > current_worst):
+                        print(f"Current dice is better than current worst: {current_dice} > {current_worst}")
+                        print(f"SAVING MODELLLL")
                         current_dice = max(current_dice)
                         best_dice_ckpt = self.best_val_loss[0][0]
                         self.best_val_loss = sorted([(best_dice_ckpt, current_dice), *self.best_val_loss[1:]], key=lambda x: x[1])
                         self.checkpoint_me(val_loss_dict, is_best=True, best_path=best_dice_ckpt)
 
                 if self.global_step % self.opts.save_interval == 0 or self.global_step == self.opts.max_steps:
+                    print(f'Saving model at step {self.global_step} (even if not best)')
                     if val_loss_dict is not None:
                         self.checkpoint_me(val_loss_dict, is_best=False)
                     else:
@@ -264,6 +275,7 @@ class Coach:
                     break
 
                 self.global_step += 1
+                print(f"Step {self.global_step} completed")
 
     def validate(self):
         self.net.eval()
@@ -453,6 +465,7 @@ class Coach:
         save_name = best_path if is_best else f'iteration_{self.global_step}.pt'
         save_dict = self.__get_save_dict()
         checkpoint_path = os.path.join(self.checkpoint_dir, save_name)
+        print(f'Saving model to {checkpoint_path}')
         torch.save(save_dict, checkpoint_path)
         with open(os.path.join(self.checkpoint_dir, 'timestamp.txt'), 'a') as f:
             if is_best:

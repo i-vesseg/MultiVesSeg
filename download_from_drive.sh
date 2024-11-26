@@ -9,7 +9,7 @@ OUTPUT_FILE="output/folder"
 mkdir -p ${OUTPUT_FILE}
 
 # Google Drive file information
-FILE_ID="1coFTz-Kkgvoc_gRT8JFzqCgeC3lAFWQp"
+FILE_ID="1coFTz-Kkgvoc_gRT8JFzqCgeC3lAFWQp" #Just an example, replace with the actual file ID
 FILEPATH="${OUTPUT_FILE}/filename.aaa"
 
 # Download the file from Google Drive if it doesn't exist

@@ -33,7 +33,12 @@ from skimage.transform import resize
 
 def DC(prediction, target):
     try: return binary.dc(prediction, target)
-    except Exception: return 0
+    except Exception as e:
+        print(f"DC failed with shapes {prediction.shape} and {target.shape}")
+        print(f"DC failed with types {prediction.dtype} and {target.dtype}")
+        print(f"DC failed with unique {np.unique(prediction)} and {np.unique(target)}")
+        print(f"DC failed with exception {e}")
+        return 0
 
 def HD(prediction, target):
     try: return binary.hd(prediction, target)

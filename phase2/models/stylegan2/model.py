@@ -432,8 +432,8 @@ class Generator(nn.Module):
         self.n_domains = n_domains
         self.pixel_norm = PixelNorm()
         self.label_embed = EqualLinear(29+n_domains, style_dim) # TODO: pass n. of labels
-        self.encoding_embed = nn.Sequential(EqualLinear(768, 29+n_domains), EqualLinear(29+n_domains, style_dim)) 
-
+        #self.encoding_embed = nn.Sequential(EqualLinear(768, 29+n_domains), EqualLinear(29+n_domains, style_dim)) 
+        
         layers = [EqualLinear(
             2*style_dim, style_dim, lr_mul=lr_mlp, activation="fused_lrelu"
         )]
@@ -672,15 +672,15 @@ class Generator(nn.Module):
             else:
                 labels = [labels]
             
-            if encodings is not None and torch.any(encodings != 0):
-                encodings = self.encoding_embed(encodings)
-                encodings = self.pixel_norm(encodings)
-                if len(encodings) > len(styles[0]):
-                    encodings = [e[None] for e in encodings]
-                else:
-                    encodings = [encodings]
-            else:
-                encodings = [l for l in labels]
+            #if encodings is not None and torch.any(encodings != 0):
+            #    encodings = self.encoding_embed(encodings)
+            #    encodings = self.pixel_norm(encodings)
+            #    if len(encodings) > len(styles[0]):
+            #        encodings = [e[None] for e in encodings]
+            #    else:
+            #        encodings = [encodings]
+            #else:
+            encodings = [l for l in labels]
             
             styles = [torch.cat([s, .8*e + .2*l], dim=1) for s, l, e in zip(styles, labels, encodings)]
             styles = [self.style(s) for s in styles]
