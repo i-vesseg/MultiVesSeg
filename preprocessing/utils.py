@@ -199,7 +199,8 @@ class extract_paths:
         self.path_rule = path_rule
         self.paths = []
     def __call__(self, img_path):
-        if not re.match(self.path_rule, os.path.basename(img_path)):
+        if not re.match(self.path_rule, img_path):
+            print(f"Path {img_path} does not match the rule {self.path_rule}")
             return
         self.paths += [img_path]
 
@@ -345,13 +346,24 @@ def get_target_spacing(spacings, shapes):
 ##########Standardization###########
 ####################################
 
-def resizeVolume(image, spacing_target, current_spacing, ignore_z=False):
+def resizeVolume(image, spacing_target, current_spacing, ignore_z=False, new_shape=None):
     if ignore_z:
         spacing_target[-1] = current_spacing[-1]
-    new_shape = np.round(current_spacing / spacing_target * image.shape).astype(int)
-    if all(new_shape == image.shape):
-        return image
+    if new_shape is None:
+        new_shape = np.round(current_spacing / spacing_target * image.shape).astype(int)
+        if all(new_shape == image.shape):
+            return image
+    else:
+        print(f"PASSED New shape: {new_shape}")
+        if len(new_shape) == 2:
+            new_shape.append(image.shape[-1])
+        else:
+            new_shape[-1] = image.shape[-1]
+        new_shape = np.array(new_shape)
+        
+    print(f"New shape: {new_shape}")
     image = resize(image, new_shape, 3, cval=0, mode='edge', anti_aliasing=False)
+    print(f"Resized shape: {image.shape}")
     return image
 
 def standardizeVolume(image, mean=None, std=None):
@@ -388,8 +400,288 @@ def load_weight(weight_path, img_shape):
         crop = (crop[0], slice(start_invert, stop_invert), crop[2])
     
     return weight_mask, crop
+#############################################################################################################################################
+################################### 256 #####################################################################################################
 
-def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral_slices=True, ignore_z=False, dont_standardize=False):
+import nibabel as nib
+from scipy.ndimage import zoom
+import numpy as np
+import os
+
+def verify_step(name, img, mask, expected_shape=None):
+    """Helper function to verify and print image and mask properties."""
+    spacing = img.header.get_zooms()[:3]
+    shape = img.get_fdata().shape
+    mask_shape = mask.get_fdata().shape
+    
+    print(f"\n=== {name} ===")
+    print(f"Image - Spacing: {spacing}, Shape: {shape}")
+    print(f"Mask  - Shape: {mask_shape}")
+    
+    if expected_shape:
+        if shape != expected_shape or mask_shape != expected_shape:
+            print(f"WARNING: Shape mismatch! Expected {expected_shape}")
+            print(f"Got - Image: {shape}, Mask: {mask_shape}")
+        else:
+            print("Shape verification: OK")
+    return spacing, shape
+
+def convert_to_target_spacing(img, masks, target_spacing, return_numpy=False):
+    """
+    Step 1: Convert image and multiple masks to target spacing while maintaining shape.
+    
+    Args:
+        img: Original NIfTI image
+        masks: List of NIfTI mask images
+        target_spacing: Target spacing tuple (x, y, z)
+        return_numpy: If True, return numpy arrays and affine instead of NIfTI objects
+    
+    Returns:
+        If return_numpy=False: Tuple of (image, list of masks) as NIfTI objects
+        If return_numpy=True: Tuple of (image_data, list of mask_data, target_affine) as numpy arrays
+    """
+    original_spacing = img.header.get_zooms()[:3]
+    original_data = img.get_fdata()
+    original_masks_data = [mask.get_fdata() for mask in masks]
+    original_affine = img.affine.copy()
+    
+    # Calculate new affine matrix for target spacing
+    target_affine = original_affine.copy()
+    target_affine[:3, :3] = np.diag(target_spacing) @ np.linalg.inv(np.diag(original_spacing)) @ target_affine[:3, :3]
+    
+    if return_numpy:
+        return original_data, original_masks_data, target_affine
+    
+    # Convert all masks to NIfTI with new affine
+    target_masks = [nib.Nifti1Image(mask_data, target_affine) 
+                   for mask_data in original_masks_data]
+    
+    return nib.Nifti1Image(original_data, target_affine), target_masks, target_affine
+
+def downsize_to_256(img, masks, target_shape=[256, 256], return_numpy=False):
+    """
+    Step 2: Downsize image and multiple masks while maintaining spacing.
+    
+    Args:
+        img: NIfTI image
+        masks: List of NIfTI mask images
+        target_shape: Target shape tuple (default: 256x256x100)
+        return_numpy: If True, return numpy arrays and affine instead of NIfTI objects
+    
+    Returns:
+        If return_numpy=False: Tuple of (image, list of masks) as NIfTI objects
+        If return_numpy=True: Tuple of (image_data, list of mask_data, downsized_affine)
+    """
+    data = img.get_fdata()
+    masks_data = [mask.get_fdata() for mask in masks]
+    current_shape = data.shape
+    
+    #convert target_shape to tuple
+    if len(target_shape) == 2:
+        target_shape = list(target_shape)
+        target_shape.append(current_shape[2])
+        
+    target_shape = tuple(target_shape)
+    # Calculate zoom factors
+    down_zoom_factors = [t/c for t, c in zip(target_shape, current_shape)]
+    
+    # Downsize image with cubic interpolation
+    downsized_data = zoom(data, down_zoom_factors, order=3)
+    
+    # Downsize all masks with nearest neighbor interpolation
+    downsized_masks = [zoom(mask_data, down_zoom_factors, order=0) 
+                      for mask_data in masks_data]
+    
+    # Keep the same affine but adjust for new size while preserving spacing
+    downsized_affine = img.affine.copy()
+    scale_matrix = np.diag([c/t for t, c in zip(target_shape, current_shape)] + [1])
+    downsized_affine = downsized_affine @ scale_matrix
+    
+    if return_numpy:
+        return downsized_data, downsized_masks, downsized_affine
+    
+    # Convert to NIfTI objects
+    downsized_masks_nifti = [nib.Nifti1Image(mask_data, downsized_affine) 
+                            for mask_data in downsized_masks]
+    
+    return nib.Nifti1Image(downsized_data, downsized_affine), downsized_masks_nifti, downsized_affine
+
+def restore_to_512(img, mask, restore_shape = [512, 512, 100], return_numpy=False):
+    """Step 3: Restore both image and mask to 512x512x100 while maintaining spacing."""
+    data = img.get_fdata()
+    mask_data = mask.get_fdata()
+    current_shape = data.shape
+    
+    
+    # Calculate zoom factors
+    up_zoom_factors = [t/c for t, c in zip(restore_shape, current_shape)]
+    
+    # Restore image with cubic interpolation
+    restored_data = zoom(data, up_zoom_factors, order=3)
+    # Restore mask with nearest neighbor interpolation
+    restored_mask = zoom(mask_data, up_zoom_factors, order=0)
+    
+    # Keep the same affine but adjust for new size while preserving spacing
+    restored_affine = img.affine.copy()
+    if not isinstance(restore_shape, tuple):
+        restore_shape = tuple(restore_shape)
+    scale_matrix = np.diag([c/t for t, c in zip(restore_shape, current_shape)] + [1])
+    restored_affine = restored_affine @ scale_matrix
+    
+    if return_numpy:
+        return restored_data, restored_mask, restored_affine
+    
+    return (nib.Nifti1Image(restored_data, restored_affine),
+            nib.Nifti1Image(restored_mask, restored_affine))
+
+def restore_original_spacing(img, mask, original_affine, return_numpy=False):
+    """Step 4: Restore original spacing using original affine for both image and mask."""
+    if return_numpy:
+        return img, mask, original_affine
+    
+    return (nib.Nifti1Image(img.get_fdata(), original_affine),
+            nib.Nifti1Image(mask.get_fdata(), original_affine))
+    
+def preprocessing_loop_256(info, out_dir, target_spacing=None, discard_extracerebral_slices=True, ignore_z=False, dont_standardize=False, 
+                       save_unique=True, new_shape = None):
+    info.preprocessed_paths = []
+    info.min_values = []
+    info.max_values = []
+    info.depths = []
+    info.z_splits = []
+    info.areas = []
+    info.shapesBeforePadding = []
+    counter = 0
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir)
+    
+    for i, img_path in enumerate(tqdm(info.paths)):
+        brain_path, weight_path, vessel_path, crop = info.brain_paths[i], info.weight_paths[i], info.vessel_paths[i], info.crops[i]
+
+        #Open image and masks
+        img = nib.load(img_path)
+        img_affine = img.affine
+        
+        print(img.shape)
+        
+        if brain_path is not None:
+            brain_mask = nib.load(brain_path)
+            assert brain_mask.shape == img.shape
+        else:
+            brain_mask = nib.Nifti1Image(np.zeros(img.shape), img_affine)
+            
+        if vessel_path is not None:
+            vessel_mask = nib.load(vessel_path)
+            assert vessel_mask.shape == img.shape
+        else:
+            vessel_mask = nib.Nifti1Image(np.zeros(img.shape), img_affine)
+
+        #Deal with metadata
+        metadata = copy.deepcopy(info.metadata[i])
+        if metadata["brain"] is not None:
+            metadata["brain"]["header"].set_data_dtype("float32")
+            if metadata["vessel"] is not None:
+                metadata["vessel"]["affine"] = copy.deepcopy(metadata["brain"]["affine"])
+        
+        #Resizing
+        if target_spacing is not None:
+            print(f"Target spacing: {target_spacing}")
+            print(f"Current spacing: {info.spacings[i]}")
+            spacing = info.spacings[i]
+            original_shape = img.shape
+            img_resampled, [brain_mask_resampled, vessel_mask_resampled], target_affine = convert_to_target_spacing(img, [brain_mask, vessel_mask], target_spacing)
+            verify_step("Resampled", img_resampled, vessel_mask_resampled, expected_shape=original_shape)
+            img_downsized, [brain_mask_downsized, vessel_mask_downsized], downsized_affine = downsize_to_256(img_resampled, [brain_mask_resampled, vessel_mask_resampled], target_shape=new_shape)
+            verify_step("Downsized", img_downsized, vessel_mask_downsized, expected_shape=(256, 256, 100))
+            
+        img = img_downsized.get_fdata()
+        brain_mask = brain_mask_downsized.get_fdata()
+        vessel_mask = vessel_mask_downsized.get_fdata()
+        
+        #Transpose so that we start treating volumes as a list of slices
+        img = img.transpose(*TRANSPOSE)
+        brain_mask = brain_mask.transpose(*TRANSPOSE)
+        vessel_mask = vessel_mask.transpose(*TRANSPOSE)
+
+        #In case the brain mask is available, you can discard useless slices
+        z_mask = np.where(brain_mask)[0]
+        if not discard_extracerebral_slices or len(z_mask) == 0:
+            first_slice, last_slice = 0, len(brain_mask)
+        else:
+            first_slice, last_slice = np.min(z_mask), np.max(z_mask)+1 - len(brain_mask)
+            if last_slice >= 0:
+                last_slice = len(brain_mask)
+        
+        img = img[first_slice:last_slice]
+        brain_mask = brain_mask[first_slice:last_slice]
+        vessel_mask = vessel_mask[first_slice:last_slice]
+        depth = len(brain_mask)
+        
+        if depth <= 0:
+            print("Segmentation failed")
+            return
+        
+        #display_middle_slice(img, axis=0),#[:, img.shape[1]//2, :]),
+        #display_middle_slice(brain_mask, axis=0),#[:, img.shape[1]//2, :]),
+        #display_middle_slice(vessel_mask, axis=0)#[:, img.shape[1]//2, :])
+        #raise Exception("CHECK")
+
+        #Standardization
+        if not dont_standardize:
+            img = standardizeVolume(img)
+
+        #raise Exception(
+        #    nib.save(nib.Nifti1Image(img, None), "test.nii.gz"),
+        #    nib.save(nib.Nifti1Image(brain_mask.astype(np.float32), None), "test_brain_mask.nii.gz"),
+        #    nib.save(nib.Nifti1Image(vessel_mask.astype(np.float32), None), "test_vessel_mask.nii.gz")
+        #)
+
+        #Save preprocessed volumes and info
+        if img_path_to_img_id is not None:
+            out_path = img_path_to_img_id(img_path) + ".npy"
+        else:
+            out_path = os.path.split(img_path)[-1].replace(".nii.gz", ".npy")
+        out_path = os.path.join(out_dir, out_path)
+        
+        info.min_values += [np.min(img)]
+        info.max_values += [np.max(img)]
+        info.depths += [depth]
+        info.z_splits += [(first_slice, last_slice)]
+        info.areas += [(np.sum(brain_mask[:5]), np.sum(brain_mask[-5:]))]
+        info.preprocessed_paths += [out_path]
+        info.shapesBeforePadding += [img.shape]
+
+        if save_unique:
+            np.save(out_path, {
+                "data": img.astype(np.float32),
+                "brain_mask": brain_mask.astype(bool),
+                "vessel_mask": vessel_mask.astype(bool if len(np.unique(vessel_mask)) == 2 else int),
+            })
+        else:
+              # Transpose back to original shape
+            img = img.transpose(1, 2, 0)
+            brain_mask = brain_mask.transpose(1, 2, 0)
+            vessel_mask = vessel_mask.transpose(1, 2, 0)
+            
+            # brain mask = brain mask + vessel mask
+            brain_mask = np.where((brain_mask == 1) | (vessel_mask == 1), 1, 0)
+            
+            out_path = out_path.replace(".npy", "")
+            nib.save(nib.Nifti1Image(img, img_downsized.affine), out_path + "_ToF.nii.gz")
+            nib.save(nib.Nifti1Image(brain_mask.astype(np.float32), img_downsized.affine), out_path + "_brain_mask.nii.gz")
+            nib.save(nib.Nifti1Image(vessel_mask.astype(np.float32), img_downsized.affine), out_path + "_vessel.nii.gz")
+        
+        counter += len(img)
+        print("\rSlices processed: {}".format(counter))
+#############################################################################################################################################
+################################### FINE 256 ################################################################################################
+    
+##########################################    
+##Outliers removal and slices extraction##
+####
+
+def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral_slices=True, ignore_z=False, dont_standardize=False, 
+                       save_unique=True, new_shape = None):
     info.preprocessed_paths = []
     info.min_values = []
     info.max_values = []
@@ -406,6 +698,7 @@ def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral
 
         #Open image and masks
         img = nib.load(img_path).get_fdata()
+        print(img.shape)
         
         if brain_path is not None:
             brain_mask = nib.load(brain_path, type="mask").get_fdata().squeeze()
@@ -446,8 +739,12 @@ def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral
         
         #Resizing
         if target_spacing is not None:
+            print(f"Target spacing: {target_spacing}")
+            print(f"Current spacing: {info.spacings[i]}")
             spacing = info.spacings[i]
-            img = resizeVolume(img, target_spacing, spacing, ignore_z=ignore_z)
+            original_shape = [512,512]
+            img = resizeVolume(img, target_spacing, spacing, ignore_z=ignore_z, new_shape=new_shape)
+            img_AAA = resizeVolume(img, spacing, spacing, ignore_z=ignore_z, new_shape=original_shape)
             #assert np.all(np.asarray(img.shape[:2]) <= 512), "Maximum size must be equal to 512"
             brain_mask = resize_segmentation(brain_mask, img.shape, order=1)
             weight_mask = resize_segmentation(weight_mask, img.shape, order=1)
@@ -461,6 +758,7 @@ def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral
 
         #Transpose so that we start treating volumes as a list of slices
         img = img.transpose(*TRANSPOSE)
+        img_AAA = img_AAA.transpose(*TRANSPOSE)
         brain_mask = brain_mask.transpose(*TRANSPOSE)
         weight_mask = weight_mask.transpose(*TRANSPOSE)
         vessel_mask = vessel_mask.transpose(*TRANSPOSE)
@@ -470,7 +768,7 @@ def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral
         if not discard_extracerebral_slices or len(z_mask) == 0:
             first_slice, last_slice = 0, len(brain_mask)
         else:
-            first_slice, last_slice = np.min(z_mask), np.max(z_mask) - len(brain_mask)
+            first_slice, last_slice = np.min(z_mask), np.max(z_mask)+1 - len(brain_mask)
             if last_slice >= 0:
                 last_slice = len(brain_mask)
         
@@ -514,12 +812,29 @@ def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral
         info.preprocessed_paths += [out_path]
         info.shapesBeforePadding += [img.shape]
 
-        np.save(out_path, {
-            "data": img.astype(np.float32),
-            "brain_mask": brain_mask.astype(bool),
-            "weight_mask": weight_mask.astype(bool),
-            "vessel_mask": vessel_mask.astype(bool if len(np.unique(vessel_mask)) == 2 else int),
-        })
+        if save_unique:
+            np.save(out_path, {
+                "data": img.astype(np.float32),
+                "brain_mask": brain_mask.astype(bool),
+                "weight_mask": weight_mask.astype(bool),
+                "vessel_mask": vessel_mask.astype(bool if len(np.unique(vessel_mask)) == 2 else int),
+            })
+        else:
+              # Transpose back to original shape
+            img = img.transpose(1, 2, 0)
+            img_AAA = img_AAA.transpose(1, 2, 0)
+            brain_mask = brain_mask.transpose(1, 2, 0)
+            weight_mask = weight_mask.transpose(1, 2, 0)
+            vessel_mask = vessel_mask.transpose(1, 2, 0)
+            
+            # brain mask = brain mask + vessel mask
+            brain_mask = np.where((brain_mask == 1) | (vessel_mask == 1), 1, 0)
+            
+            out_path = out_path.replace(".npy", "")
+            nib.save(nib.Nifti1Image(img, None), out_path + "_ToF.nii.gz")
+            nib.save(nib.Nifti1Image(img_AAA, None), out_path + "_AAA.nii.gz")
+            nib.save(nib.Nifti1Image(brain_mask.astype(np.float32), None), out_path + "_brain_mask.nii.gz")
+            nib.save(nib.Nifti1Image(vessel_mask.astype(np.float32), None), out_path + "_vessel.nii.gz")
         
         counter += len(img)
         print("\rSlices processed: {}".format(counter))

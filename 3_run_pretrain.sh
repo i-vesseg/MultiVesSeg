@@ -3,18 +3,20 @@
 cd phase2/
 
 # Set variables
-SRC_EXP_DIR="OUTPUT_TEST/TopCow" # OUTPUT DIRECTORY
+SRC_EXP_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase2/TopCow" # OUTPUT DIRECTORY
+SRC_EXP_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase2/IXI" # OUTPUT DIRECTORY
 
 BATCH_SIZE=8
 MAX_STEPS=15000
 LABEL_NC=3
 
+#PHASE1_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase1/"
+#STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/020000.pt"
+
 PHASE1_DIR="../phase1/centralized"
-STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/final_checkpoint.pt"
-STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/020000.pt"
+#STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/generator_HQSWI.pt"
+#STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/generator_ToPCoW.pt"
 STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/generator_IXI.pt"
-STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/generator_HQSWI.pt"
-STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/generator_ToPCoW.pt"
 
 SRC_LABEL=0
 
@@ -29,6 +31,6 @@ python scripts/pretrain.py \
     --only_intra \
     --src_label=${SRC_LABEL} \
     --n_domains=2 \
-    --save_interval=100 \
-    --val_interval=1 \
     --workers=12 \
+    #--val_interval= \
+    #--save_interval=1000 \

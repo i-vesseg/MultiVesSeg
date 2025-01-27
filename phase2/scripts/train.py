@@ -3,6 +3,7 @@ This file runs the main training/val loop
 """
 import os
 import json
+from pathlib import Path
 import sys
 import pprint
 import time
@@ -43,7 +44,8 @@ def main():
         print('Oops... {} already exists'.format(opts.exp_dir))
         # Add a timestamp to the experiment directory
         opts.exp_dir = opts.exp_dir + '_' + str(int(time.time()))
-    os.makedirs(opts.exp_dir)
+    print(f"### exp_dir: {opts.exp_dir}")
+    Path(opts.exp_dir).mkdir(parents=True, exist_ok=True)
 
     opts.checkpoint_path = None
     if opts.checkpoint_dir is not None:

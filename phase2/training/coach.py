@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 
-from utils import common, train_utils
+from AGGREGATION.utils import common, train_utils
 from criteria import ce_loss, dice_loss, ssim_loss
 from criteria.lpips.lpips import LPIPS
 from configs import data_configs
@@ -35,11 +35,18 @@ from skimage.transform import resize
 
 def DC(prediction, target):
     try: return binary.dc(prediction, target)
-    except Exception: return 0
+    except Exception as e:
+        print(f"DC failed with exception {e}")
+        assert()
+        return 0
 
 def HD(prediction, target):
     try: return binary.hd(prediction, target)
-    except Exception: return np.inf
+    except Exception as e:
+        print(f"HD failed with exception {e}")
+        #assert()
+        return np.inf
+
 
 def set_seed(seed: int = 42) -> None:
     np.random.seed(seed)
@@ -200,7 +207,7 @@ class Coach:
         print(f'Starting training... Max steps: {self.opts.max_steps}') 
         while not finished_training:
             for batch in tqdm(self.train_dataloader):
-                print(f"Step {self.global_step} started")
+                #print(f"Step {self.global_step} started")
                 self.optimizer_seg.zero_grad()
                 self.optimizer.zero_grad()
 
@@ -275,7 +282,7 @@ class Coach:
                     break
 
                 self.global_step += 1
-                print(f"Step {self.global_step} completed")
+                #print(f"Step {self.global_step} completed")
 
     def validate(self):
         self.net.eval()

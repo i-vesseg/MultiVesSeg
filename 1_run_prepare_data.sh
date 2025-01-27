@@ -3,12 +3,14 @@
 cd phase1/centralized
 
 # Set variables
-DATA_DIR="../OUTPUT/" # OUTPUT DIRECTORY
+#DATA_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase1/" # OUTPUT DIRECTORY 
+DATA_DIR="/data/falcetta/brain_data/A2V_experiments/OUTPUT_phase1_IXI/" # OUTPUT DIRECTORY
 echo "Output directory: ${DATA_DIR}"
 
 
-SRC_DIR="/data/falcetta/brain_data/A2V_PREPROCESSED/preprocess_OASIS"
-TGT_DIR="/home/falcetta/GRENOBLE/MultiVesSeg/preprocessing/preprocess_TopCow_FULL_SEG_1"
+SRC_DIR="/data/falcetta/A2V_experiments/OASIS_preprocessed/preprocess_OASIS"
+#TGT_DIR="/data/falcetta/A2V_experiments/TOPCOW_preprocessed/preprocess_TopCow_all"
+TGT_DIR="/data/falcetta/A2V_experiments/IXI_preprocessed/preprocess_IXI"
 SIZE=512 # OUTPUT SIZE
 
 # Run the Python script

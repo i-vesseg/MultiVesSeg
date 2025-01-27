@@ -1,7 +1,7 @@
 batchgenerators==0.24
 evalutils==0.4.2
 matplotlib==3.5.2
-MedPy==0.4.0
+MedPy==0.5.2 #0.4.0
 nibabel==4.0.1
 nilearn==0.10.3
 opencv-python==4.6.0.66
@@ -12,3 +12,4 @@ tensorboard==2.9.1
 tqdm==4.66.5
 lmdb==1.5.1
 # pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 --extra-index-url https://download.pytorch.org/whl/cu111
+# In case of errors ==> pip install setuptools==59.5.0

@@ -13,13 +13,6 @@ import torch.distributed as dist
 from torchvision import transforms, utils
 from tqdm import tqdm
 
-try:
-    import wandb
-
-except ImportError:
-    wandb = None
-
-
 from dataset import MultiResolutionDataset
 from distributed import (
     get_rank,
@@ -338,22 +331,6 @@ def train(args, loader, generator, discriminator, g_optim, d_optim, g_ema, devic
                 )
             )
 
-            if wandb and args.wandb:
-                wandb.log(
-                    {
-                        "Generator": g_loss_val,
-                        "Discriminator": d_loss_val,
-                        "Augment": ada_aug_p,
-                        "Rt": r_t_stat,
-                        "R1": r1_val,
-                        "Path Length Regularization": path_loss_val,
-                        "Mean Path Length": mean_path_length,
-                        "Real Score": real_score_val,
-                        "Fake Score": fake_score_val,
-                        "Path Length": path_length_val,
-                    }
-                )
-
             if i % 100 == 0:
                 with torch.no_grad():
                     g_ema.eval()
@@ -403,7 +380,8 @@ def train(args, loader, generator, discriminator, g_optim, d_optim, g_ema, devic
                     )
 
             if i % 1000 == 0:
-                Path("checkpoint").mkdir(parents=True, exist_ok=True)
+                checkpoint_dir = args.ckpt_save_dir
+                Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
                 torch.save(
                     {
                         "g": g_module.state_dict(),
@@ -414,10 +392,10 @@ def train(args, loader, generator, discriminator, g_optim, d_optim, g_ema, devic
                         "args": args,
                         "ada_aug_p": ada_aug_p,
                     },
-                    f"checkpoint/{str(i).zfill(6)}.pt",
+                    f"{checkpoint_dir}/{str(i).zfill(6)}.pt",
                 )
-                if os.path.isfile(f"checkpoint/{str(i - 2000).zfill(6)}.pt"):
-                    os.remove(f"checkpoint/{str(i - 2000).zfill(6)}.pt")
+                if os.path.isfile(f"{checkpoint_dir}/{str(i - 2000).zfill(6)}.pt"):
+                    os.remove(f"{checkpoint_dir}/{str(i - 2000).zfill(6)}.pt")
                 
 
 
@@ -479,15 +457,18 @@ if __name__ == "__main__":
         default=None,
         help="path to the checkpoints to resume training",
     )
+    parser.add_argument(
+        "--ckpt_save_dir",
+        type=str,
+        default="checkpoint",
+        help="path to the directory where checkpoints are saved",
+    )
     parser.add_argument("--lr", type=float, default=0.002, help="learning rate")
     parser.add_argument(
         "--channel_multiplier",
         type=int,
         default=2,
         help="channel multiplier factor for the model. config-f = 2, else = 1",
-    )
-    parser.add_argument(
-        "--wandb", action="store_true", help="use weights and biases logging"
     )
     parser.add_argument(
         "--local_rank", type=int, default=0, help="local rank for distributed training"
@@ -633,8 +614,5 @@ if __name__ == "__main__":
         sampler=data_sampler(dataset, shuffle=True, distributed=args.distributed),
         drop_last=True,
     )
-
-    if get_rank() == 0 and wandb is not None and args.wandb:
-        wandb.init(project="stylegan 2")
 
     train(args, loader, generator, discriminator, g_optim, d_optim, g_ema, device)

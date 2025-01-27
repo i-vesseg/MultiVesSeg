@@ -2,7 +2,7 @@ from configs import transforms_config
 from configs import transforms_config
 
 #OASIS
-DATASET_PATH ="/data/falcetta/brain_data/A2V_PREPROCESSED/preprocess_OASIS"
+DATASET_PATH ="/data/falcetta/A2V_experiments/OASIS_preprocessed/preprocess_OASIS"
 DATASETS = {
     'HQSWI': {
         'transforms': transforms_config.MyTransforms,

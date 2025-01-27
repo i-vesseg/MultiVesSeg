@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 
-from utils import common, train_utils
+from AGGREGATION.utils import common, train_utils
 from criteria import ce_loss, dice_loss, ssim_loss
 from criteria.lpips.lpips import LPIPS
 from configs import data_configs
@@ -42,7 +42,12 @@ def DC(prediction, target):
 
 def HD(prediction, target):
     try: return binary.hd(prediction, target)
-    except Exception: return np.inf
+    except Exception as e:
+        print(f"HD failed with shapes {prediction.shape} and {target.shape}")
+        print(f"HD failed with types {prediction.dtype} and {target.dtype}")
+        print(f"HD failed with unique {np.unique(prediction)} and {np.unique(target)}")
+        print(f"HD failed with exception {e}")
+        return np.inf
 
 def set_seed(seed: int = 42) -> None:
     np.random.seed(seed)
@@ -100,6 +105,7 @@ class Coach:
 
         # Initialize dataset
         self.test_dataset = self.configure_datasets()
+        print(f"Loading test dataset")
         self.test_dataloader = DataLoader(self.test_dataset,
                                         batch_size=self.opts.test_batch_size,
                                         shuffle=False,
@@ -301,6 +307,8 @@ class Coach:
         print(f'Loading dataset for {self.opts.dataset_type}')
         dataset_args = data_configs.DATASETS[self.opts.dataset_type]
         transforms_dict = dataset_args['transforms'](self.opts).get_transforms()
+        #print(f"Loading test dataset from: {dataset_args['test_source_root']} and {dataset_args['test_target_root']}")
+        
         test_dataset = ImagesDataset(
             opts=self.opts,
             source_root=dataset_args['test_source_root'],

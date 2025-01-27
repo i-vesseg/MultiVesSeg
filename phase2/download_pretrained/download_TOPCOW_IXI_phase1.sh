@@ -9,14 +9,15 @@ OUTPUT_FILE="phase1/centralized/checkpoint"
 mkdir -p ${OUTPUT_FILE}
 
 # Google Drive file information
-FILE_ID="1ce4q_IqkFloKrbMNYTDFo6ENRDgyiha4"
-FILEPATH="${OUTPUT_FILE}/generator_IXI.pt"
 
 FILE_ID="1I-0h-FX-FgKQOpaEPVEvwKXB3Y0BOTYI"
 FILEPATH="${OUTPUT_FILE}/generator_HQSWI.pt"
 
 FILE_ID="1v_VtLTKO57uYXgSAgHzlZBI_aQUz1g3y"
 FILEPATH="${OUTPUT_FILE}/generator_ToPCoW.pt"
+
+FILE_ID="1ce4q_IqkFloKrbMNYTDFo6ENRDgyiha4"
+FILEPATH="${OUTPUT_FILE}/generator_IXI.pt"
 
 # Download the file from Google Drive if it doesn't exist
 if [ -f "$FILEPATH" ]; then

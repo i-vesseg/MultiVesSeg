@@ -3,6 +3,7 @@ from io import BytesIO
 import multiprocessing
 from functools import partial
 import os
+from pathlib import Path
 import numpy as np
 
 from PIL import Image
@@ -123,5 +124,7 @@ if __name__ == "__main__":
         os.path.join(args.tgt_path, file_path) for file_path in os.listdir(args.tgt_path) if file_path.endswith(".npy")
     ]#datasets.ImageFolder(args.path)
 
+    Path(args.out).mkdir(parents=True, exist_ok=True)
+    
     with lmdb.open(args.out, map_size=1024 ** 4, readahead=False) as env:
         prepare(env, imgset, args.n_worker, sizes=sizes, resample=resample)

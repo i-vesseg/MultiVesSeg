@@ -7,6 +7,8 @@ import sys
 import pprint
 import time
 
+from pathlib import Path
+
 sys.path.append(".")
 sys.path.append("..")
 
@@ -43,7 +45,7 @@ def main():
         print('Oops... {} already exists'.format(opts.exp_dir))
         # Add a timestamp to the experiment directory
         opts.exp_dir = opts.exp_dir + '_' + str(int(time.time()))
-    os.makedirs(opts.exp_dir)
+    Path(opts.exp_dir).mkdir(parents=True, exist_ok=True)
 
     opts.checkpoint_path = None
     if opts.checkpoint_dir is not None:

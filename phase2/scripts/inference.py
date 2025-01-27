@@ -3,9 +3,11 @@ This file runs the main training/val loop
 """
 import os
 import json
+from pathlib import Path
 import sys
 import pprint
 import pickle
+import time
 import numpy as np
 import torch
 import nibabel as nib
@@ -14,6 +16,7 @@ import gc
 
 from batchgenerators.augmentations.utils import resize_segmentation
 from skimage.transform import resize
+from tqdm import tqdm
 
 sys.path.append(".")
 sys.path.append("..")
@@ -35,7 +38,7 @@ check_is_train()
 from options import Options
 from training.coach_inference import Coach
 from configs import data_configs
-from utils import data_utils
+from AGGREGATION.utils import data_utils
 
 def get_best_models(checkpoint_dir):
     with open(os.path.join(checkpoint_dir, "timestamp.txt"), "r") as file:
@@ -49,8 +52,8 @@ def get_best_models(checkpoint_dir):
 def main():
     opts = Options(is_train=False).parse()
     if os.path.exists(opts.exp_dir):
-        raise Exception('Oops... {} already exists'.format(opts.exp_dir))
-    os.makedirs(opts.exp_dir)
+        print('Oops... {} already exists'.format(opts.exp_dir))
+    Path(opts.exp_dir).mkdir(parents=True, exist_ok=True)
 
     opts_dict = vars(opts)
     pprint.pprint(opts_dict)
@@ -74,18 +77,24 @@ def main():
     else:
         all_img_names.update([p.split("_slice")[0] for p in data_utils.make_dataset(dataset_args['test_target_root']["labeled"])])
     
-    for curr_img_name in sorted(all_img_names):
+    for curr_img_name in tqdm(sorted(all_img_names)):
         if opts.only_intra:
             data_configs.DATASETS[opts.dataset_type]['test_source_root'] = curr_img_name
         else:
             data_configs.DATASETS[opts.dataset_type]['test_target_root']["labeled"] = curr_img_name
         curr_img_name = os.path.basename(curr_img_name)
+        print(f"Processing {curr_img_name}...")
+        # If the prediction is already done, skip
+        if os.path.exists(os.path.join(opts.exp_dir, f"{curr_img_name}_intra.nii.gz")):
+            print(f"Aleady processed {curr_img_name}!")
+            continue
         
         intra_pred = 0
         if not opts.only_intra:
             inter_pred = 0
             volume_trans = 0        
         
+        # Run inference for each model in the ensemble
         for ckpt in ckpts[-1*opts.ensemble_size:]:
             opts.checkpoint_path = ckpt
             global_step = torch.load(ckpt, map_location='cpu')["global_step"]
@@ -101,7 +110,8 @@ def main():
             del coach
             gc.collect()
             torch.cuda.empty_cache()
-    
+
+        # Average the predictions
         intra_pred /= len(ckpts)
         if not opts.only_intra:
             inter_pred /= len(ckpts)
@@ -197,11 +207,13 @@ def main():
         if metadata is None:
             metadata = info_val["metadata"][idx_patient]["img"]
         affine, header = metadata["affine"], metadata["header"]
+        print(f"Saving INTRA PREDICTION for {curr_img_name}")
         nib.save(
             nib.Nifti1Image(volume_intra.astype(float), affine, header),
             os.path.join(opts.exp_dir, f"{curr_img_name}_intra.nii.gz")
         )
         if not opts.only_intra:
+            print(f"Saving INTER PREDICTION")
             nib.save(
                 nib.Nifti1Image(volume_inter.astype(float), affine, header),
                 os.path.join(opts.exp_dir, f"{curr_img_name}_inter.nii.gz")

@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset, Sampler
 from PIL import Image
-from utils import data_utils
+from AGGREGATION.utils import data_utils
 import numpy as np
 import random
 import os
@@ -30,7 +30,8 @@ class ImagesDataset(Dataset):
         
         self.len_tof = len(self.paths_tof)
         self.len_swi = len(self.paths_swi)
-        
+        #print([os.path.basename(p) for p in self.paths_swi])
+        #print(f"TOF: {self.len_tof}, SWI: {self.len_swi}")
         if self.len_swi == 0 and self.len_tof == 0:
             raise Exception("Dataset is empty")
         elif self.len_swi == 0: #only tof
