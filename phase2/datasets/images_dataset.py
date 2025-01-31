@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset, Sampler
 from PIL import Image
-from AGGREGATION.utils import data_utils
+from utils import data_utils
 import numpy as np
 import random
 import os

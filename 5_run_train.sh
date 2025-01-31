@@ -6,10 +6,10 @@ cd phase2/
 #SRC_EXP_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase2/TopCow" # OUTPUT DIRECTORY
 #TGT_exp_dir="/data/falcetta/A2V_experiments/OUTPUT_phase2/TopCow_TARGET" # OUTPUT DIRECTORY
 
-SRC_EXP_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase2/IXI" # OUTPUT DIRECTORY
-TGT_exp_dir="/data/falcetta/A2V_experiments/OUTPUT_phase2/IXI_TARGET" # OUTPUT DIRECTORY
+SRC_EXP_DIR="/home/geninana/data_ssd/DqnieleF/A2V_experiments/ADAPTATION/TOF" # OUTPUT DIRECTORY FROM 3_run_pretrain.sh
+TGT_exp_dir="/home/geninana/data_ssd/DqnieleF/A2V_experiments/ADAPTATION/TOF_ADAPT" # OUTPUT DIRECTORY for this script
 
-BATCH_SIZE=8
+BATCH_SIZE=32 # Default:8 but you can increase this value if you have more GPU memory
 MAX_STEPS=15000
 
 

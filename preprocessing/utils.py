@@ -681,7 +681,7 @@ def preprocessing_loop_256(info, out_dir, target_spacing=None, discard_extracere
 ####
 
 def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral_slices=True, ignore_z=False, dont_standardize=False, 
-                       save_unique=True, new_shape = None):
+                       save_unique=True, new_shape = None, crop_CT = 0):
     info.preprocessed_paths = []
     info.min_values = []
     info.max_values = []
@@ -723,6 +723,12 @@ def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral
         brain_mask = brain_mask[crop]
         weight_mask = weight_mask[crop]
         vessel_mask = vessel_mask[crop]
+
+        if crop_CT > 0:
+            img = img[...,crop_CT:]
+            brain_mask = brain_mask[20:-20,20:-20,crop_CT:]
+            weight_mask = weight_mask[20:-20,20:-20,crop_CT:]
+            vessel_mask = vessel_mask[20:-20,20:-20,crop_CT:]
 
         #Deal with metadata
         metadata = copy.deepcopy(info.metadata[i])

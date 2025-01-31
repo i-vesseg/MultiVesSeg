@@ -3,20 +3,22 @@
 cd phase2/
 
 # Set variables
-SRC_EXP_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase2/TopCow" # OUTPUT DIRECTORY
-SRC_EXP_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase2/IXI" # OUTPUT DIRECTORY
-
-BATCH_SIZE=8
-MAX_STEPS=15000
-LABEL_NC=3
-
-#PHASE1_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase1/"
-#STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/020000.pt"
-
 PHASE1_DIR="../phase1/centralized"
-#STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/generator_HQSWI.pt"
+
+
+############################### CT ########################################
+#SRC_EXP_DIR="/home/geninana/data_ssd/DqnieleF/A2V_experiments/ADAPTATION/CT" # OUTPUT DIRECTORY
 #STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/generator_ToPCoW.pt"
+
+############################### TOF ########################################
+SRC_EXP_DIR="/home/geninana/data_ssd/DqnieleF/A2V_experiments/ADAPTATION/TOF" # OUTPUT DIRECTORY
 STYLEGAN_WEIGHTS="${PHASE1_DIR}/checkpoint/generator_IXI.pt"
+###########################################################################
+
+
+BATCH_SIZE=32 # Default:8 but you can increase this value if you have more GPU memory
+MAX_STEPS=15000 # Number of training steps
+LABEL_NC=3
 
 SRC_LABEL=0
 

@@ -38,7 +38,7 @@ check_is_train()
 from options import Options
 from training.coach_inference import Coach
 from configs import data_configs
-from AGGREGATION.utils import data_utils
+from utils import data_utils
 
 def get_best_models(checkpoint_dir):
     with open(os.path.join(checkpoint_dir, "timestamp.txt"), "r") as file:
@@ -83,6 +83,10 @@ def main():
         else:
             data_configs.DATASETS[opts.dataset_type]['test_target_root']["labeled"] = curr_img_name
         curr_img_name = os.path.basename(curr_img_name)
+        #if curr_img_name.startswith("432678"):
+        #    print(f"Just RUN {curr_img_name}")
+        #else:
+        #    continue
         print(f"Processing {curr_img_name}...")
         # If the prediction is already done, skip
         if os.path.exists(os.path.join(opts.exp_dir, f"{curr_img_name}_intra.nii.gz")):

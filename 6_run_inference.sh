@@ -1,21 +1,21 @@
 #!/bin/bash
 
 cd phase2/
-
-# Set variables
-#TGT_exp_dir="/data/falcetta/A2V_experiments/OUTPUT_phase2/TopCow_TARGET" # (From the previous script + TIMESTAMP)
-#INFO_path="/home/falcetta/GRENOBLE/MultiVesSeg/preprocessing/info_TopCow_all.pkl" # (From the preprocessing notebook)
-
-#TEST_dir="/data/falcetta/A2V_experiments/OUTPUT_phase2/TopCow_INFERENCE" # OUTPUT DIRECTORY
-
 # ----------------------------
-
-TGT_exp_dir="/data/falcetta/A2V_experiments/OUTPUT_phase2/IXI_TARGET" # OUTPUT DIRECTORY
-INFO_path="/home/falcetta/GRENOBLE/MultiVesSeg/preprocessing/info_IXI.pkl" # (From the preprocessing notebook)
-
-TEST_dir="/data/falcetta/A2V_experiments/OUTPUT_phase2/IXI_INFERENCE" # OUTPUT DIRECTORY
-
 # ----------------------------
+# TGT_exp_dir="/home/geninana/data_ssd/DqnieleF/MODELW/TopCow_TARGET" # SAVED MODEL DIRECTORY
+# INFO_path="/home/geninana/data_ssd/DqnieleF/MultiVesSeg/preprocessing/info_CT_TAS_GRENOBLE_TEST.pkl" # (From the preprocessing notebook)
+# TEST_dir="/home/geninana/data_ssd/DqnieleF/A2V_experiments/CT_TAS_GRENOBLE_TEST_preprocessed/OUTPUTS" # OUTPUT DIRECTORY
+# # ----------------------------
+# TGT_exp_dir="/home/geninana/data_ssd/DqnieleF/MODELW/IXI_TARGET" # SAVED MODEL DIRECTORY
+# INFO_path="/home/geninana/data_ssd/DqnieleF/MultiVesSeg/preprocessing/info_TOF_GRENOBLE.pkl" # (From the preprocessing notebook)
+# TEST_dir="/home/geninana/data_ssd/DqnieleF/A2V_experiments/TOF_GRENOBLE_preprocessed/OUTPUTS" # OUTPUT DIRECTORY
+
+# ---------------------------- UPDATE THESE PATHS
+TGT_exp_dir="/home/geninana/data_ssd/DqnieleF/MODELW/checkpoint_TopCow_tgt_9slices" # SAVED MODEL DIRECTORY
+INFO_path="/home/geninana/data_ssd/DqnieleF/MultiVesSeg/preprocessing/info_CT_GRENOBLE_5.pkl" # (INFO FILE From the preprocessing notebook)
+TEST_dir="/home/geninana/data_ssd/DqnieleF/A2V_experiments/CT_TEST_5/OUTPUTS9" # OUTPUT DIRECTORY
+
 
 
 python scripts/inference.py \

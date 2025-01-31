@@ -10,12 +10,13 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 
-from AGGREGATION.utils import common, train_utils
+from utils import common, train_utils
 from criteria import ce_loss, dice_loss, ssim_loss
 from criteria.lpips.lpips import LPIPS
 from configs import data_configs
 from datasets.images_dataset import ImagesDataset, MyRandomSampler
 from models.psp import pSp
+from tqdm import tqdm
 
 def requires_grad(model, flag=True):
     for p in model.parameters():
@@ -38,6 +39,7 @@ def DC(prediction, target):
         print(f"DC failed with types {prediction.dtype} and {target.dtype}")
         print(f"DC failed with unique {np.unique(prediction)} and {np.unique(target)}")
         print(f"DC failed with exception {e}")
+        assert()
         return 0
 
 def HD(prediction, target):
@@ -134,6 +136,7 @@ class Coach:
         pred_dict = {}
         
         for batch_idx, batch in enumerate(self.test_dataloader):
+            #print(f"Processing batch {batch_idx}... ---------------------------------")
             x, y, w, labels, _ = batch
             all_paths = self.test_dataloader.dataset.paths_tof + self.test_dataloader.dataset.paths_swi
             img_names = all_paths[
