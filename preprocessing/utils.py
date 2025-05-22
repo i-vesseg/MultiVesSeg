@@ -158,7 +158,12 @@ def open_volume(img_path):#, path_must_contain):
         raise Exception("Wrong shape")
     return img, metadata, spacing, shape
 
-def cropVolume(volume):
+def cropVolume(volume, perform_crop=True):
+    # If cropping is disabled, return slices covering the full volume
+    if not perform_crop:
+        return tuple(slice(0, dim) for dim in volume.shape)
+    
+    # Original cropping logic
     crop = []
     axes = np.arange(len(volume.shape))
     for axis in axes:
@@ -166,8 +171,6 @@ def cropVolume(volume):
         
         intensity_max = np.max(volume, axis=other_axes)
         cumsum = np.cumsum(intensity_max).astype(intensity_max.dtype)
-        #plt.hist(cumsum, bins=255)
-        #plt.show()
         cumsum_counts, cumsum_bins = np.histogram(cumsum, 255)
         
         try:
@@ -176,11 +179,11 @@ def cropVolume(volume):
             crop += [slice(0, volume.shape[axis])]
             continue
         
-        start, end = np.argmin(cumsum_counts > thr), -1*np.argmin(cumsum_counts[::1] > thr)
+        start, end = np.argmin(cumsum_counts > thr), -1*np.argmin(cumsum_counts[::-1] > thr)
         start, end = cumsum_bins[start], cumsum_bins[end]
         start, end = np.argmin(cumsum < start), np.argmin(cumsum < end)
         crop += [slice(start, end if end!=0 else volume.shape[axis])]
-    #print(crop)
+    
     return tuple(crop)
 
 """def get_slice_size(slc):
@@ -205,20 +208,20 @@ class extract_paths:
         self.paths += [img_path]
 
 class extract_info(extract_paths):
-    def __init__(self, path_rule=""):
+    def __init__(self, path_rule="", perform_crop=True):
         super().__init__(path_rule)
         self.metadata = []
         self.spacings = []
         self.shapes = []
         self.crops = []
+        self.perform_crop = perform_crop
     def __call__(self, img_path):
         len_paths = len(self.paths)
         super().__call__(img_path)
         if len(self.paths) == len_paths:
             raise Exception("Wrong path")
-        
         img, metadata, spacing, shape = open_volume(img_path)
-        crop = cropVolume(img)
+        crop = cropVolume(img, perform_crop=self.perform_crop)
         
         self.metadata += [metadata]
         self.spacings += [spacing]
@@ -228,8 +231,8 @@ class extract_info(extract_paths):
         return [cropToShape(crop, shape) for crop, shape in zip(self.crops, self.shapes)]
     
 class extract_info_and_masks(extract_info):
-    def __init__(self, path_rule=""):
-        super().__init__(path_rule)
+    def __init__(self, path_rule="", perform_crop=True):
+        super().__init__(path_rule, perform_crop)
         self.brain_paths = []
         self.weight_paths = []
         self.vessel_paths = []
@@ -281,42 +284,122 @@ def eval_statistics(s):
         k: np.percentile(np.array(s), q, axis=0)
     for k, q in zip(["min", "median", "max"], [0, 50, 100])}
 
-def display_info(extract_info_train, extract_info_val):
-    len_train = len(extract_info_train.shapes)
-    len_val = len(extract_info_val.shapes)
+# def display_info(extract_info_train, extract_info_val):
+#     len_train = len(extract_info_train.shapes)
+#     len_val = len(extract_info_val.shapes)
 
-    slides_train = sum([shape[2] for shape in extract_info_train.shapesAfterCropping()])
-    slides_val = sum([shape[2] for shape in extract_info_val.shapesAfterCropping()])
+#     slides_train = sum([shape[2] for shape in extract_info_train.shapesAfterCropping()])
+#     slides_val = sum([shape[2] for shape in extract_info_val.shapesAfterCropping()])
 
-    spacing_train = eval_statistics(extract_info_train.spacings)
-    spacing_val = eval_statistics(extract_info_val.spacings)
+#     spacing_train = eval_statistics(extract_info_train.spacings)
+#     spacing_val = eval_statistics(extract_info_val.spacings)
     
-    shape_train = eval_statistics(extract_info_train.shapesAfterCropping())
-    shape_val = eval_statistics(extract_info_val.shapesAfterCropping())
+#     shape_train = eval_statistics(extract_info_train.shapesAfterCropping())
+#     shape_val = eval_statistics(extract_info_val.shapesAfterCropping())
 
-    with np.printoptions(formatter={'float': "{:06.2f}".format}):#precision=2, suppress=True):
-        info_df = pd.DataFrame.from_dict({
-                "TRAIN": [
-                    len_train, slides_train,
-                    str(spacing_train["median"]),
-                    "{} - {}".format(spacing_train["min"], spacing_train["max"]),
-                    str(shape_train["median"]),
-                    "{} - {}".format(shape_train["min"], shape_train["max"]),
-                ],
-                "VAL": [
-                    len_val, slides_val,
-                    str(spacing_val["median"]),
-                    "{} - {}".format(spacing_val["min"], spacing_val["max"]),
-                    str(shape_val["median"]),
-                    "{} - {}".format(shape_val["min"], shape_val["max"]),
-                ]
-            }, 
-            columns=["#volumes", "#slices", "spacing median", "spacing range", "shape median", "shape range"],
-            orient="index"
-        )
+#     with np.printoptions(formatter={'float': "{:06.2f}".format}):#precision=2, suppress=True):
+#         info_df = pd.DataFrame.from_dict({
+#                 "TRAIN": [
+#                     len_train, slides_train,
+#                     str(spacing_train["median"]),
+#                     "{} - {}".format(spacing_train["min"], spacing_train["max"]),
+#                     str(shape_train["median"]),
+#                     "{} - {}".format(shape_train["min"], shape_train["max"]),
+#                 ],
+#                 "VAL": [
+#                     len_val, slides_val,
+#                     str(spacing_val["median"]),
+#                     "{} - {}".format(spacing_val["min"], spacing_val["max"]),
+#                     str(shape_val["median"]),
+#                     "{} - {}".format(shape_val["min"], shape_val["max"]),
+#                 ]
+#             }, 
+#             columns=["#volumes", "#slices", "spacing median", "spacing range", "shape median", "shape range"],
+#             orient="index"
+#         )
     
+#     with np.printoptions(precision=3, suppress=True):
+#         display(info_df)
+
+def display_info(*extract_info_datasets, names=None, use_display=True):
+    """
+    Display statistics for one or multiple datasets.
+    
+    Parameters:
+    - extract_info_datasets: One or more dataset objects
+    - names: Optional list of names for the datasets. If None, defaults to ["TRAIN", "VAL", "TEST", ...]
+    - use_display: If True, uses IPython's display function; if False, prints the DataFrame (for terminal)
+    
+    Backward compatibility:
+    - When called with 2 arguments, assumes train and val datasets
+    """
+    # Handle backward compatibility
+    if len(extract_info_datasets) == 2 and names is None:
+        names = ["TRAIN", "VAL"]
+    
+    # Default names if not provided
+    if names is None:
+        default_names = ["TRAIN", "VAL", "TEST"]
+        # Add numbered datasets if more than 3
+        names = default_names + [f"SET_{i}" for i in range(len(extract_info_datasets) - 3)] 
+        names = names[:len(extract_info_datasets)]
+    
+    # Check that we have a name for each dataset
+    if len(names) != len(extract_info_datasets):
+        raise ValueError(f"Number of names ({len(names)}) doesn't match number of datasets ({len(extract_info_datasets)})")
+    
+    # Create a dictionary to store data for each dataset
+    data_dict = {}
+    
+    # Process each dataset
+    for name, extract_info in zip(names, extract_info_datasets):
+        len_data = len(extract_info.shapes)
+        slides_data = sum([shape[2] for shape in extract_info.shapesAfterCropping()])
+        
+        # First formatting with precision=2 for spacing statistics
+        with np.printoptions(formatter={'float': "{:06.2f}".format}):
+            spacing_data = eval_statistics(extract_info.spacings)
+            spacing_median_str = str(spacing_data["median"])
+            spacing_range_str = "{} - {}".format(spacing_data["min"], spacing_data["max"])
+        
+        # Second formatting with precision=3 for shape statistics
+        with np.printoptions(precision=3, suppress=True):
+            shape_data = eval_statistics(extract_info.shapesAfterCropping())
+            shape_median_str = str(shape_data["median"])
+            shape_range_str = "{} - {}".format(shape_data["min"], shape_data["max"])
+        
+        data_dict[name] = [
+            len_data, 
+            slides_data,
+            spacing_median_str,
+            spacing_range_str,
+            shape_median_str,
+            shape_range_str,
+        ]
+    
+    # Create the DataFrame
+    info_df = pd.DataFrame.from_dict(
+        data_dict, 
+        columns=["#volumes", "#slices", "spacing median", "spacing range", "shape median", "shape range"],
+        orient="index"
+    )
+    
+    # Use precision=3 for display, as in the original function
     with np.printoptions(precision=3, suppress=True):
-        display(info_df)
+        # Check if we're in a Jupyter/IPython environment and use_display is True
+        if use_display:
+            try:
+                from IPython.display import display
+                display(info_df)
+            except ImportError:
+                # Fallback to print if IPython is not available
+                print(info_df.to_string())
+        else:
+            # Explicitly use print for terminal usage
+            print(info_df.to_string())
+    
+    # Return the DataFrame so it can be used programmatically if needed
+    return info_df
 
 def chop_mask(src_path, dst_path):
     mask = nib.load(src_path, type="mask")

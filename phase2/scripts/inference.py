@@ -150,7 +150,7 @@ def main():
             #volume = resize_segmentation(volume, [depth, *volume.shape[1:]], order=2)        
 
         first_slice, last_slice = info_val["z_splits"][idx_patient]
-        if last_slice == depth:
+        if last_slice >= depth:
             last_slice = 0
         volume_intra = np.concatenate([
             np.zeros([first_slice, *volume_intra.shape[1:]], dtype=volume_intra.dtype),
