@@ -38,7 +38,7 @@ check_is_train()
 from options import Options
 from training.coach_inference import Coach
 from configs import data_configs
-from AGGREGATION.utils import data_utils
+from utils import data_utils
 
 def get_best_models(checkpoint_dir):
     with open(os.path.join(checkpoint_dir, "timestamp.txt"), "r") as file:
@@ -72,6 +72,10 @@ def main():
     
     all_img_names = set()
     dataset_args = data_configs.DATASETS[opts.dataset_type]
+    
+    print(f"Getting test images from {dataset_args['test_target_root']['labeled']}")
+    input("Press Enter to continue...")
+    
     if opts.only_intra:
         all_img_names.update([p.split("_slice")[0] for p in data_utils.make_dataset(dataset_args['test_source_root'])])
     else:
@@ -84,10 +88,15 @@ def main():
             data_configs.DATASETS[opts.dataset_type]['test_target_root']["labeled"] = curr_img_name
         curr_img_name = os.path.basename(curr_img_name)
         print(f"Processing {curr_img_name}...")
+        if curr_img_name in ['topcow_ct_whole_013']:
+            print(f"OUTLIERS: Skipping {curr_img_name}...")
+            continue
+        
         # If the prediction is already done, skip
         if os.path.exists(os.path.join(opts.exp_dir, f"{curr_img_name}_intra.nii.gz")):
             print(f"Aleady processed {curr_img_name}!")
             continue
+        
         
         intra_pred = 0
         if not opts.only_intra:
@@ -101,7 +110,7 @@ def main():
             coach = Coach(opts, global_step)
         
             for confirm_curr_img_name, pred_dict in coach.infer():
-                assert curr_img_name == confirm_curr_img_name
+                assert curr_img_name == confirm_curr_img_name, f"Expected {curr_img_name}, got {confirm_curr_img_name}"
                 intra_pred += pred_dict["intra"]
                 if not opts.only_intra:
                     inter_pred += pred_dict["intra"]
@@ -110,7 +119,7 @@ def main():
             del coach
             gc.collect()
             torch.cuda.empty_cache()
-
+            
         # Average the predictions
         intra_pred /= len(ckpts)
         if not opts.only_intra:
@@ -146,7 +155,11 @@ def main():
             #volume = resize_segmentation(volume, [depth, *volume.shape[1:]], order=2)        
 
         first_slice, last_slice = info_val["z_splits"][idx_patient]
-        if last_slice == depth:
+        print(first_slice, last_slice)
+        
+        if last_slice >= depth:
+            print(depth)
+            print("AAAAAAAAAAAAAAAA")
             last_slice = 0
         volume_intra = np.concatenate([
             np.zeros([first_slice, *volume_intra.shape[1:]], dtype=volume_intra.dtype),
@@ -172,6 +185,7 @@ def main():
 
         #inference (slow down otherwise)
         (x_size, y_size, z_size) = info_val["shapesAfterCropping"][idx_patient]
+        print(x_size, y_size, z_size)
         volume_intra = resize_segmentation(volume_intra, [z_size, x_size, y_size], order=1)
         if not opts.only_intra:
             volume_inter = resize_segmentation(volume_inter, [z_size, x_size, y_size], order=1)
@@ -208,11 +222,17 @@ def main():
             metadata = info_val["metadata"][idx_patient]["img"]
         affine, header = metadata["affine"], metadata["header"]
         print(f"Saving INTRA PREDICTION for {curr_img_name}")
+        # Flip axis 1 # REMOVE IF NOT NEEDED
+        volume_intra = np.flip(volume_intra, axis=1)
         nib.save(
             nib.Nifti1Image(volume_intra.astype(float), affine, header),
             os.path.join(opts.exp_dir, f"{curr_img_name}_intra.nii.gz")
         )
         if not opts.only_intra:
+            # REMOVE IF NOT NEEDED
+            volume_inter = np.flip(volume_inter, axis=1)
+            volume_ensemble = np.flip(volume_ensemble, axis=1)
+            volume_trans = np.flip(volume_trans, axis=1)
             print(f"Saving INTER PREDICTION")
             nib.save(
                 nib.Nifti1Image(volume_inter.astype(float), affine, header),

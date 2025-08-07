@@ -13,8 +13,9 @@ SIZE=512
 N_SAMPLE=8
 ITER=250000
 AUGMENT="--augment"
+BATCH=2
 
 # Run the distributed training script
-python -m torch.distributed.launch --nproc_per_node=2 train.py ${DATA_DIR} --size ${SIZE} --n_sample ${N_SAMPLE} --iter ${ITER} ${AUGMENT} --batch 2 \
+python -m torch.distributed.launch --nproc_per_node=2 train.py ${DATA_DIR} --size ${SIZE} --n_sample ${N_SAMPLE} --iter ${ITER} ${AUGMENT} --batch ${BATCH} \
         --ckpt_save_dir ${DATA_DIR}/checkpoint \
         --ckpt /home/falcetta/GRENOBLE/MultiVesSeg/phase1/centralized/checkpoint/generator_IXI.pt # Checkpoint to start from

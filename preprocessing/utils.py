@@ -158,7 +158,13 @@ def open_volume(img_path):#, path_must_contain):
         raise Exception("Wrong shape")
     return img, metadata, spacing, shape
 
-def cropVolume(volume):
+def cropVolume(volume, perform_crop=True):
+    # If cropping is disabled, return slices covering the full volume
+    if not perform_crop:
+        print("Cropping disabled")
+        return tuple(slice(0, dim) for dim in volume.shape)
+    
+    # Original cropping logic
     crop = []
     axes = np.arange(len(volume.shape))
     for axis in axes:
@@ -166,8 +172,6 @@ def cropVolume(volume):
         
         intensity_max = np.max(volume, axis=other_axes)
         cumsum = np.cumsum(intensity_max).astype(intensity_max.dtype)
-        #plt.hist(cumsum, bins=255)
-        #plt.show()
         cumsum_counts, cumsum_bins = np.histogram(cumsum, 255)
         
         try:
@@ -176,11 +180,11 @@ def cropVolume(volume):
             crop += [slice(0, volume.shape[axis])]
             continue
         
-        start, end = np.argmin(cumsum_counts > thr), -1*np.argmin(cumsum_counts[::1] > thr)
+        start, end = np.argmin(cumsum_counts > thr), -1*np.argmin(cumsum_counts[::-1] > thr)
         start, end = cumsum_bins[start], cumsum_bins[end]
         start, end = np.argmin(cumsum < start), np.argmin(cumsum < end)
         crop += [slice(start, end if end!=0 else volume.shape[axis])]
-    #print(crop)
+    
     return tuple(crop)
 
 """def get_slice_size(slc):
@@ -205,20 +209,20 @@ class extract_paths:
         self.paths += [img_path]
 
 class extract_info(extract_paths):
-    def __init__(self, path_rule=""):
+    def __init__(self, path_rule="", perform_crop=True):
         super().__init__(path_rule)
         self.metadata = []
         self.spacings = []
         self.shapes = []
         self.crops = []
+        self.perform_crop = perform_crop
     def __call__(self, img_path):
         len_paths = len(self.paths)
         super().__call__(img_path)
         if len(self.paths) == len_paths:
             raise Exception("Wrong path")
-        
         img, metadata, spacing, shape = open_volume(img_path)
-        crop = cropVolume(img)
+        crop = cropVolume(img, perform_crop=self.perform_crop)
         
         self.metadata += [metadata]
         self.spacings += [spacing]
@@ -228,8 +232,8 @@ class extract_info(extract_paths):
         return [cropToShape(crop, shape) for crop, shape in zip(self.crops, self.shapes)]
     
 class extract_info_and_masks(extract_info):
-    def __init__(self, path_rule=""):
-        super().__init__(path_rule)
+    def __init__(self, path_rule="", perform_crop=True):
+        super().__init__(path_rule, perform_crop)
         self.brain_paths = []
         self.weight_paths = []
         self.vessel_paths = []
@@ -558,21 +562,24 @@ def preprocessing_loop_256(info, out_dir, target_spacing=None, discard_extracere
     for i, img_path in enumerate(tqdm(info.paths)):
         brain_path, weight_path, vessel_path, crop = info.brain_paths[i], info.weight_paths[i], info.vessel_paths[i], info.crops[i]
 
+        print(f"\n\nProcessing {img_path}")
         #Open image and masks
         img = nib.load(img_path)
         img_affine = img.affine
         
         print(img.shape)
         
-        if brain_path is not None:
+        if brain_path is not None and os.path.isfile(brain_path):
+            print("Brain mask path: ", brain_path)
             brain_mask = nib.load(brain_path)
-            assert brain_mask.shape == img.shape
+            assert brain_mask.shape == img.shape, f"Brain mask shape: {brain_mask.shape}, Image shape: {img.shape}"
         else:
             brain_mask = nib.Nifti1Image(np.zeros(img.shape), img_affine)
             
-        if vessel_path is not None:
+        if vessel_path is not None and os.path.isfile(vessel_path):
+            print("Vessel mask path: ", vessel_path)
             vessel_mask = nib.load(vessel_path)
-            assert vessel_mask.shape == img.shape
+            assert vessel_mask.shape == img.shape, f"Vessel mask shape: {vessel_mask.shape}, Image shape: {img.shape}"
         else:
             vessel_mask = nib.Nifti1Image(np.zeros(img.shape), img_affine)
 
@@ -768,6 +775,7 @@ def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral
         if not discard_extracerebral_slices or len(z_mask) == 0:
             first_slice, last_slice = 0, len(brain_mask)
         else:
+            print("WE ARE DISCARDING EXTRACEREBRAL SLICES\n\n")
             first_slice, last_slice = np.min(z_mask), np.max(z_mask)+1 - len(brain_mask)
             if last_slice >= 0:
                 last_slice = len(brain_mask)

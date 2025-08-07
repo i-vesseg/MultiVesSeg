@@ -59,9 +59,10 @@ class pSp(nn.Module):
                     child.running_mean = None
                     child.running_var = None
 
-    def load_weights(self):
+    def load_weights(self, verbose=True):
         if self.opts.checkpoint_path is not None:
-            print('Loading pSp from checkpoint: {}'.format(self.opts.checkpoint_path))
+            if verbose:
+                print('Loading pSp from checkpoint: {}'.format(self.opts.checkpoint_path))
             ckpt = torch.load(self.opts.checkpoint_path, map_location='cpu')
             if len(self.opts.src_tgt_domains) == len(ckpt['latent_avg']):
                 self.encoder.load_state_dict(get_keys(ckpt, 'module.encoder'), strict=True)
@@ -71,15 +72,15 @@ class pSp(nn.Module):
             self.interpreter.load_state_dict(get_keys(ckpt, 'module.interpreter'), strict=True)
             if not self.opts.only_intra:
                 requires_grad(self.interpreter.classifiers["source"], False)
-            self.__load_latent_avg(ckpt)
+            self.__load_latent_avg(ckpt, verbose=verbose)
         else:
             print('Loading decoder weights from pretrained!')
             ckpt = torch.load(self.opts.stylegan_weights)
             self.decoder.load_state_dict(ckpt['g_ema'], strict=True)
             if self.opts.learn_in_w:
-                self.__load_latent_avg(ckpt, repeat=1)
+                self.__load_latent_avg(ckpt, repeat=1, verbose=verbose)
             else:
-                self.__load_latent_avg(ckpt, repeat=self.opts.n_styles)
+                self.__load_latent_avg(ckpt, repeat=self.opts.n_styles, verbose=verbose)
 
     def forward(self, x, label, resize=True, latent_mask=None, input_code=False, randomize_noise=True,
                 inject_latent=None, return_latents=False, alpha=None, feature_scale=1, return_mask=True, ExSeg=False, is_semi=None):
@@ -134,10 +135,11 @@ class pSp(nn.Module):
     def set_opts(self, opts):
         self.opts = opts
 
-    def __load_latent_avg(self, ckpt, repeat=None):
+    def __load_latent_avg(self, ckpt, repeat=None, verbose=True):
         with torch.no_grad():
             if 'latent_avg' in ckpt and len(self.opts.src_tgt_domains) == len(ckpt['latent_avg']):
-                print("Loading latent_avg from checkpoint")
+                if verbose:
+                    print("Loading latent_avg from checkpoint")
                 self.latent_avg = ckpt['latent_avg'].to(self.opts.device)
                 if repeat is not None:
                     self.latent_avg = self.latent_avg.repeat(repeat, 1)

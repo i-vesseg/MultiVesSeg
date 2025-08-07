@@ -6,8 +6,11 @@ cd phase2/
 #SRC_EXP_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase2/TopCow" # OUTPUT DIRECTORY
 #TGT_exp_dir="/data/falcetta/A2V_experiments/OUTPUT_phase2/TopCow_TARGET" # OUTPUT DIRECTORY
 
-SRC_EXP_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase2/IXI" # OUTPUT DIRECTORY
-TGT_exp_dir="/data/falcetta/A2V_experiments/OUTPUT_phase2/IXI_TARGET" # OUTPUT DIRECTORY
+#SRC_EXP_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase2/IXI" # OUTPUT DIRECTORY
+#TGT_exp_dir="/data/falcetta/A2V_experiments/OUTPUT_phase2/IXI_TARGET" # OUTPUT DIRECTORY
+
+SRC_EXP_DIR="/data/falcetta/A2V_experiments/OUTPUT_phase2/TopCow"
+TGT_exp_dir="/data/falcetta/A2V_experiments/OUTPUT_phase2/GRENOBLE_CTs_TARGET" # OUTPUT DIRECTORY
 
 BATCH_SIZE=8
 MAX_STEPS=15000

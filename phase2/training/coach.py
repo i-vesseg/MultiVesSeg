@@ -11,13 +11,30 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 
-from AGGREGATION.utils import common, train_utils
+from utils import common, train_utils
 from criteria import ce_loss, dice_loss, ssim_loss
 from criteria.lpips.lpips import LPIPS
 from configs import data_configs
 from datasets.images_dataset import ImagesDataset, MyRandomSampler
 from models.psp import pSp
 from training.ranger import Ranger
+
+
+def count_parameters(model, only_trainable=False):
+    """
+    Count the total number of parameters in a PyTorch model.
+    
+    Args:
+        model: PyTorch model
+        only_trainable: If True, count only trainable parameters
+        
+    Returns:
+        int: Total number of parameters
+    """
+    if only_trainable:
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+    else:
+        return sum(p.numel() for p in model.parameters())
 
 def requires_grad(model, flag=True):
     for p in model.parameters():
@@ -88,6 +105,22 @@ class Coach:
         self.net = pSp(self.opts)
         self.net = torch.nn.DataParallel(self.net, device_ids=[0, 1]).to(self.device)#PARALLEL
 
+        # Print model parameter counts
+        print(f"Model Parameters:")
+        print(f"Total parameters: {count_parameters(self.net):,}")
+        print(f"Trainable parameters: {count_parameters(self.net, only_trainable=True):,}")
+
+        # Count individual components
+        encoder_params = count_parameters(self.net.module.encoder)
+        decoder_params = count_parameters(self.net.module.decoder)
+        interpreter_params = count_parameters(self.net.module.interpreter) if hasattr(self.net.module, 'interpreter') else 0
+
+        print(f"Encoder parameters: {encoder_params:,}")
+        print(f"Decoder parameters: {decoder_params:,}")
+        print(f"Interpreter parameters: {interpreter_params:,}")
+        print(f"Other parameters: {count_parameters(self.net) - encoder_params - decoder_params - interpreter_params:,}")
+        
+        assert()
         # Estimate latent_avg via dense sampling if latent_avg is not available
         if self.net.module.latent_avg is None:
             with torch.no_grad():

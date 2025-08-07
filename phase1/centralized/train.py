@@ -598,7 +598,26 @@ if __name__ == "__main__":
             output_device=args.local_rank,
             broadcast_buffers=False,
         )
-
+    
+    def count_parameters(model):
+        """
+        Count the total number of trainable parameters in a PyTorch model.
+        
+        Args:
+            model: PyTorch model
+            
+        Returns:
+            int: Total number of trainable parameters
+        """
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+    
+    # Print model parameter counts
+    #if get_rank() == 0:  # Only print on main process in distributed training
+    #    print(f"Generator parameters: {count_parameters(generator):,}")
+    #    print(f"Discriminator parameters: {count_parameters(discriminator):,}")
+    #    print(f"G-EMA parameters: {count_parameters(g_ema):,}")
+    #    print(f"Total parameters: {count_parameters(generator) + count_parameters(discriminator):,}")
+    
     transform = transforms.Compose(
         [
             #transforms.RandomHorizontalFlip(),
@@ -616,3 +635,4 @@ if __name__ == "__main__":
     )
 
     train(args, loader, generator, discriminator, g_optim, d_optim, g_ema, device)
+

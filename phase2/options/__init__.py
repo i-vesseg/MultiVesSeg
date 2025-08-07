@@ -93,7 +93,10 @@ class Options(metaclass=Singleton):
         self.parser.add_argument('--one_target_slice', action="store_true", help='Use only one annotated slice at target.')
         self.parser.add_argument('--disable_balanced_sampling', action="store_true", help='Disable balanced data sampling.')
         self.parser.add_argument('--use_da', action="store_true", help='Use data augmentation.')
-    
+        
+        # inference
+        self.parser.add_argument('--compute_final_metrics', default=True, help='Compute metrics on the test set')
+        
     def initialize_inference(self):
         #paths
         self.parser.add_argument('--metadata', required=True, type=str, help='Path to metadata from preprocessing')
