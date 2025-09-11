@@ -113,7 +113,7 @@ def display_middle_slice(img, axis=2, mask=None, downsample_factor=1):
             slice_mask = None
         slice = numpy_to_PIL(slice, np.min(img), np.max(img), slice_mask)
         slice = slice.rotate(90, expand=True)
-        display(slice.resize(np.array(slice.size)//downsample_factor))
+        display(slice.resize(tuple(np.array(slice.size)//downsample_factor)))
 
 def load_volume(img_path, mask_path=None, mask=None, display_header=False):
     img = nib.load(img_path)
@@ -401,7 +401,7 @@ def preprocessing_loop(info, out_dir, target_spacing=None, discard_extracerebral
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
     
-    for i, img_path in enumerate(info.paths):
+    for i, img_path in enumerate(tqdm(info.paths)):
         brain_path, weight_path, vessel_path, crop = info.brain_paths[i], info.weight_paths[i], info.vessel_paths[i], info.crops[i]
 
         #Open image and masks

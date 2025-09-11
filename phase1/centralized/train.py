@@ -1,5 +1,6 @@
 import argparse
 import math
+from pathlib import Path
 import random
 import os
 
@@ -373,6 +374,7 @@ def train(args, loader, generator, discriminator, g_optim, d_optim, g_ema, devic
                     sample = torch.stack([sample, g_ema(
                         [sample_z], not_sample_labels, randomize_noise=False
                     )[0]], dim=1).reshape([sample.shape[0]*2, *sample.shape[1:]])
+                    Path("sample").mkdir(parents=True, exist_ok=True)
                     utils.save_image(
                         sample,
                         f"sample/{str(i).zfill(6)}.png",
@@ -401,6 +403,7 @@ def train(args, loader, generator, discriminator, g_optim, d_optim, g_ema, devic
                     )
 
             if i % 1000 == 0:
+                Path("checkpoint").mkdir(parents=True, exist_ok=True)
                 torch.save(
                     {
                         "g": g_module.state_dict(),

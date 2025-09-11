@@ -1,0 +1,19 @@
+phase1/OUTPUT/
+phase1/centralized/sample/
+phase1/centralized/checkpoint/
+
+phase2/pretrained_models/
+
+preprocessing/numpy/
+preprocessing/preprocess_IXI/
+preprocessing/preprocess_OASIS/
+
+preprocessing/info_IXI.pkl
+preprocessing/info_OASIS.pkl
+
+preprocessing/preprocess_map_IXI.npy
+preprocessing/preprocess_map_OASIS.npy
+
+#all pycache and pyc files
+*/__pycache__/
+*.pyc

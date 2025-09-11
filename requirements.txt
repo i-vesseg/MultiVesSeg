@@ -1,0 +1,13 @@
+batchgenerators==0.24
+evalutils==0.4.2
+matplotlib==3.5.2
+MedPy==0.4.0
+nibabel==4.0.1
+nilearn==0.10.3
+opencv-python==4.6.0.66
+pytorch-msssim==0.2.1
+scikit-image==0.19.3
+SimpleITK==2.1.1.2
+tensorboard==2.9.1
+torch==1.9.1 #+cu111
+tqdm==4.66.5
