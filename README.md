@@ -38,8 +38,11 @@ Folder `preprocessing` contains the Jupyter notebooks used to prepare the datase
 ## Training networks
 
 ### Phase 1
+<div align="justify">
+  
+This phase requires to designate which of the preprocessed datasets from the previous stage will serve as the source domain and which will be the target. Keep in mind that annotations are not yet required for either the source or target, as this is an unsupervised training phase. So, to finalize the data preparation for training, run the following command:
 
-This phase requires one additional step to prepare the training data, which can be executed using the following command:
+</div>
 
 ```
 python prepare_data.py --out ${DATA_dir} --size 512 --src_path ${SRC_dir}/train/ --tgt_path ${TGT_dir}/train/
